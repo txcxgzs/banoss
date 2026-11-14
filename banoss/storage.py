@@ -50,6 +50,7 @@ class _PoolEntry:
         self.max_connections = max(1, max_connections)
         self.idle_timeout_sec = max(0, idle_timeout_sec)
         self.semaphore = asyncio.Semaphore(self.max_connections)
+        self.connect_lock = asyncio.Lock()
         self.idle_conns: list[tuple[asyncssh.SSHClientConnection, asyncssh.SFTPClient, float]] = []
         self.active_count = 0
 
@@ -209,7 +210,7 @@ class StorageManager:
             "port": int(backend.get("port", 22)),
             "username": backend["username"],
             "known_hosts": None,
-            "connect_timeout": 15,
+            "connect_timeout": 30,
             "keepalive_interval": 20,
             "keepalive_count_max": 3,
         }
@@ -226,6 +227,20 @@ class StorageManager:
             raise
         return ssh_conn, sftp
 
+    async def _open_sftp_with_retry(
+        self, backend: dict[str, Any]
+    ) -> tuple[asyncssh.SSHClientConnection, asyncssh.SFTPClient]:
+        for attempt in range(2):
+            try:
+                return await self._open_sftp(backend)
+            except asyncssh.PermissionDenied:
+                raise
+            except (asyncssh.Error, OSError, TimeoutError):
+                if attempt == 1:
+                    raise
+                await asyncio.sleep(1.0)
+        raise RuntimeError("Unreachable")
+
     @asynccontextmanager
     async def acquire_sftp(self, backend: dict[str, Any]) -> AsyncIterator[asyncssh.SFTPClient]:
         entry = await self._get_pool(backend)
@@ -234,19 +249,26 @@ class StorageManager:
         ssh_conn: Optional[asyncssh.SSHClientConnection] = None
         sftp: Optional[asyncssh.SFTPClient] = None
         broken = False
-        try:
+
+        async def _pop_idle() -> tuple[Optional[asyncssh.SSHClientConnection], Optional[asyncssh.SFTPClient]]:
             while entry.idle_conns:
                 c_ssh, c_sftp, _ = entry.idle_conns.pop()
                 if not c_ssh.is_closed():
-                    ssh_conn, sftp = c_ssh, c_sftp
-                    break
+                    return c_ssh, c_sftp
                 await _safe_close_sftp(c_ssh, c_sftp)
+            return None, None
 
+        try:
+            ssh_conn, sftp = await _pop_idle()
             if ssh_conn is None or sftp is None:
-                ssh_conn, sftp = await self._open_sftp(backend)
+                # Serialize SSH handshakes to avoid jump-host rate-limit / timeout storms
+                async with entry.connect_lock:
+                    ssh_conn, sftp = await _pop_idle()
+                    if ssh_conn is None or sftp is None:
+                        ssh_conn, sftp = await self._open_sftp_with_retry(backend)
 
             yield sftp
-        except (asyncssh.Error, OSError):
+        except (asyncssh.Error, OSError, TimeoutError):
             broken = True
             raise
         finally:
@@ -366,11 +388,11 @@ class StorageManager:
                     await self._ensure_sftp_dir(sftp, bid, base_dir, rel_path)
                 try:
                     try:
-                        fh = await sftp.open(tmp_path, "wb", block_size=32768)
+                        fh = await sftp.open(tmp_path, "wb", block_size=65536, max_requests=64)
                     except asyncssh.SFTPNoSuchFile:
                         # External dir cleanup invalidated our cache; force-recreate & retry once
                         await self._ensure_sftp_dir(sftp, bid, base_dir, rel_path, force=True)
-                        fh = await sftp.open(tmp_path, "wb", block_size=32768)
+                        fh = await sftp.open(tmp_path, "wb", block_size=65536, max_requests=64)
                     async with fh as f:
                         async for incoming in chunk_iter:
                             if not incoming:
@@ -471,7 +493,7 @@ class StorageManager:
                 base_dir = backend["base_path"].rstrip("/") or "/"
                 full_path = posixpath.join(base_dir, seg["remote_path"])
                 async with self.acquire_sftp(backend) as sftp:
-                    async with sftp.open(full_path, "rb", block_size=32768) as f:
+                    async with sftp.open(full_path, "rb", block_size=65536, max_requests=64) as f:
                         await f.seek(local_start)
                         remaining = need
                         while remaining > 0:
@@ -517,7 +539,7 @@ class StorageManager:
             base_dir = backend["base_path"].rstrip("/") or "/"
             full_path = posixpath.join(base_dir, seg["remote_path"])
             async with self.acquire_sftp(backend) as sftp:
-                async with sftp.open(full_path, "rb", block_size=32768) as f:
+                async with sftp.open(full_path, "rb", block_size=65536, max_requests=64) as f:
                     await f.seek(remote_offset)
                     for chunk_idx in range(first_chunk, last_chunk + 1):
                         plain_len = min(c_size, plain_total - chunk_idx * c_size)

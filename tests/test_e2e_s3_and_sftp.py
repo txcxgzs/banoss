@@ -410,5 +410,23 @@ async def test_sftp_dir_cache_and_self_healing(live_env):
         assert (live_env["sftp_root_1"] / "objs" / "aa" / "aa112233-4455-6677-8899-00aabbccdde0").is_file()
         await storage.invalidate_backend_pool("cache-test-backend")
         assert all(bid != "cache-test-backend" for bid, _ in storage._known_dirs)
+
+        # Transient TimeoutError on first SSH connect attempt must retry cleanly instead of 500
+        calls = {"n": 0}
+        orig_open = storage._open_sftp
+
+        async def _flaky_open(bk):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise TimeoutError("simulated handshake jitter")
+            return await orig_open(bk)
+
+        storage._open_sftp = _flaky_open  # type: ignore[method-assign]
+        try:
+            async with storage.acquire_sftp(backend) as sftp:
+                assert await sftp.isdir("/sftp_node_1")
+            assert calls["n"] == 2
+        finally:
+            storage._open_sftp = orig_open  # type: ignore[method-assign]
     finally:
         await storage.stop()
