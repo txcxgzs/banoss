@@ -2340,7 +2340,7 @@
         <div class="form-grid">
           <div class="form-row"><label>分配容量配额 (GiB, 0=不限)</label><input id="bk-quota" type="number" value="${quotaGiB}" /></div>
           <div class="form-row"><label>最大并发 SFTP 连接数</label><input id="bk-maxc" type="number" value="${b?.max_connections ?? 3}" /></div>
-          <div class="form-row"><label>空闲自动断连秒数</label><input id="bk-idle" type="number" value="${b?.idle_timeout_sec ?? 60}" /></div>
+          <div class="form-row"><label>空闲自动断连秒数</label><input id="bk-idle" type="number" value="${b?.idle_timeout_sec ?? 600}" /></div>
           <div class="form-row" style="display:flex;align-items:flex-end;padding-bottom:6px">
             <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer"><input id="bk-ro" type="checkbox" ${b?.read_only ? "checked" : ""} /><span>设为只读归档节点（停止新写入）</span></label>
           </div>
@@ -2393,7 +2393,7 @@
         base_path: document.getElementById("bk-path").value,
         quota_bytes: Math.round(Number(document.getElementById("bk-quota").value || 0) * (1024 ** 3)),
         max_connections: Number(document.getElementById("bk-maxc").value || 3),
-        idle_timeout_sec: Number(document.getElementById("bk-idle").value || 60),
+        idle_timeout_sec: (() => { const v = document.getElementById("bk-idle").value; return v === "" ? 600 : Number(v); })(),
         read_only: document.getElementById("bk-ro").checked,
         ...(protocol === "sftp" ? _collectTtlPayload("bk") : {}),
       };

@@ -26,7 +26,7 @@ from banoss.s3_auth import (
     iter_request_payload,
     verify_s3_request,
 )
-from banoss.storage import StorageManager
+from banoss.storage import StorageManager, make_segment_rel_path
 
 _BUCKET_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
 
@@ -747,7 +747,7 @@ async def _handle_put_object(
         )
 
     segment_id = str(uuid.uuid4())
-    rel_path = f"objs/{segment_id[:2]}/{segment_id[2:4]}/{segment_id}"
+    rel_path = make_segment_rel_path(segment_id)
     write_res = await storage.write_stream(
         backend,
         rel_path,

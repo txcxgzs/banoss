@@ -124,6 +124,8 @@ def live_env(tmp_path: Path):
             "sftp_root_2": sftp_root_2,
             "local_root_3": local_root_3,
             "chunk_size": 1024,
+            "storage": app.state.storage,
+            "crypto": app.state.crypto,
         }
     finally:
         uvi_server.should_exit = True
@@ -370,3 +372,43 @@ def test_multi_user_sftp_s3_lifecycle(live_env):
     # Verify all remote encrypted files were garbage-collected
     assert [p for p in live_env["sftp_root_1"].rglob("*") if p.is_file()] == []
     assert [p for p in live_env["sftp_root_2"].rglob("*") if p.is_file()] == []
+
+
+async def test_sftp_dir_cache_and_self_healing(live_env):
+    import shutil
+    from banoss.storage import StorageManager, make_segment_rel_path
+
+    crypto = live_env["crypto"]
+    storage = StorageManager(db=None, crypto=crypto, default_chunk_size=1024)  # type: ignore[arg-type]
+    backend = {
+        "id": "cache-test-backend",
+        "protocol": "sftp",
+        "host": "127.0.0.1",
+        "port": live_env["sftp_port"],
+        "username": "scnet",
+        "auth_type": "key",
+        "credential_enc": crypto.encrypt_secret(live_env["client_priv_pem"]),
+        "passphrase_enc": "",
+        "base_path": "/sftp_node_1",
+        "max_connections": 2,
+        "idle_timeout_sec": 30,
+        "is_active": True,
+    }
+
+    async def _bytes():
+        yield b"fast-upload-payload"
+
+    try:
+        rel = make_segment_rel_path("aa112233-4455-6677-8899-00aabbccdde0")
+        assert rel == "objs/aa/aa112233-4455-6677-8899-00aabbccdde0"
+        await storage.write_stream(backend, rel, _bytes(), segment_id=rel, encrypt=True)
+        assert ("cache-test-backend", "/sftp_node_1/objs/aa") in storage._known_dirs
+
+        # Simulate external removal of the cached shard dir; write_stream must auto-heal and succeed
+        shutil.rmtree(live_env["sftp_root_1"] / "objs" / "aa")
+        await storage.write_stream(backend, rel, _bytes(), segment_id=rel, encrypt=True)
+        assert (live_env["sftp_root_1"] / "objs" / "aa" / "aa112233-4455-6677-8899-00aabbccdde0").is_file()
+        await storage.invalidate_backend_pool("cache-test-backend")
+        assert all(bid != "cache-test-backend" for bid, _ in storage._known_dirs)
+    finally:
+        await storage.stop()

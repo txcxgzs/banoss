@@ -38,6 +38,12 @@ class WriteResult:
     chunk_size: int
 
 
+def make_segment_rel_path(segment_id: str) -> str:
+    """Return a balanced 1-level (256-bucket) relative storage path for a segment UUID."""
+    prefix = segment_id[:2] if len(segment_id) >= 2 else "00"
+    return f"objs/{prefix}/{segment_id}"
+
+
 class _PoolEntry:
     def __init__(self, backend_id: str, max_connections: int, idle_timeout_sec: int) -> None:
         self.backend_id = backend_id
@@ -56,14 +62,25 @@ class StorageManager:
         self.crypto = crypto
         self.default_chunk_size = default_chunk_size
         self._pools: dict[str, _PoolEntry] = {}
+        self._known_dirs: set[tuple[str, str]] = set()
+        self._bg_tasks: set[asyncio.Task[None]] = set()
         self._reaper_task: Optional[asyncio.Task[None]] = None
         self._lock = asyncio.Lock()
 
     async def start(self) -> None:
         if self._reaper_task is None:
             self._reaper_task = asyncio.create_task(self._idle_reaper_loop())
+        self._spawn_bg_task(self._warm_active_backends_bg())
 
     async def stop(self) -> None:
+        for task in list(self._bg_tasks):
+            task.cancel()
+        for task in list(self._bg_tasks):
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+        self._bg_tasks.clear()
         if self._reaper_task is not None:
             self._reaper_task.cancel()
             try:
@@ -73,10 +90,52 @@ class StorageManager:
             self._reaper_task = None
         await self.close_all_pools()
 
+    def _spawn_bg_task(self, coro: Awaitable[None]) -> None:
+        task: asyncio.Task[None] = asyncio.create_task(coro)  # type: ignore[arg-type]
+        self._bg_tasks.add(task)
+        task.add_done_callback(lambda t: self._bg_tasks.discard(t))
+
+    async def _warm_active_backends_bg(self) -> None:
+        try:
+            backends = await self.db.list_backends(active_only=True)
+        except Exception:
+            return
+        for backend in backends:
+            if backend.get("protocol") == "sftp" and int(backend.get("idle_timeout_sec", 600)) > 0:
+                await self.warm_backend(backend)
+
+    async def warm_backend(self, backend: dict[str, Any]) -> None:
+        """Pre-warm one idle SFTP connection and cache base_dir in the background."""
+        if not backend.get("is_active") or backend.get("protocol") != "sftp":
+            return
+        if int(backend.get("idle_timeout_sec", 600)) <= 0:
+            return
+        bid = backend["id"]
+        entry = await self._get_pool(backend)
+        if entry.idle_conns or entry.active_count > 0:
+            return
+        try:
+            async with self.acquire_sftp(backend) as sftp:
+                base_dir = (backend.get("base_path") or "/").rstrip("/") or "/"
+                if (bid, base_dir) not in self._known_dirs:
+                    await sftp.makedirs(base_dir, exist_ok=True)
+                    self._known_dirs.add((bid, base_dir))
+        except Exception:
+            pass
+
+    def schedule_warm_backend(self, backend: dict[str, Any]) -> None:
+        """Schedule non-blocking SFTP pre-warming for a created/updated backend."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self._spawn_bg_task(self.warm_backend(backend))
+
     async def close_all_pools(self) -> None:
         async with self._lock:
             entries = list(self._pools.values())
             self._pools.clear()
+            self._known_dirs.clear()
         for entry in entries:
             for ssh_conn, sftp, _ in entry.idle_conns:
                 await _safe_close_sftp(ssh_conn, sftp)
@@ -85,6 +144,7 @@ class StorageManager:
     async def invalidate_backend_pool(self, backend_id: str) -> None:
         async with self._lock:
             entry = self._pools.pop(backend_id, None)
+            self._known_dirs = {pair for pair in self._known_dirs if pair[0] != backend_id}
         if entry:
             for ssh_conn, sftp, _ in entry.idle_conns:
                 await _safe_close_sftp(ssh_conn, sftp)
@@ -150,7 +210,8 @@ class StorageManager:
             "username": backend["username"],
             "known_hosts": None,
             "connect_timeout": 15,
-            "keepalive_interval": 30,
+            "keepalive_interval": 20,
+            "keepalive_count_max": 3,
         }
         if auth_type == "key" and cred:
             connect_kwargs["client_keys"] = [_load_client_key(cred, passphrase)]
@@ -200,6 +261,40 @@ class StorageManager:
     # ------------------------------------------------------------------
     # Write / Read / Delete / Probe Operations
     # ------------------------------------------------------------------
+    async def _ensure_sftp_dir(
+        self,
+        sftp: asyncssh.SFTPClient,
+        backend_id: str,
+        base_dir: str,
+        rel_path: str,
+        *,
+        force: bool = False,
+    ) -> None:
+        """Create only uncached subdirs under base_dir instead of walking from '/'."""
+        if force or (backend_id, base_dir) not in self._known_dirs:
+            await sftp.makedirs(base_dir, exist_ok=True)
+            self._known_dirs.add((backend_id, base_dir))
+
+        rel_dir = posixpath.dirname(rel_path).strip("/")
+        if not rel_dir or rel_dir == ".":
+            return
+
+        cur = base_dir
+        for part in rel_dir.split("/"):
+            if not part or part == ".":
+                continue
+            cur = posixpath.join(cur, part)
+            if not force and (backend_id, cur) in self._known_dirs:
+                continue
+            try:
+                await sftp.mkdir(cur)
+            except asyncssh.SFTPFileAlreadyExists:
+                pass
+            except asyncssh.SFTPFailure:
+                if not await sftp.isdir(cur):
+                    raise
+            self._known_dirs.add((backend_id, cur))
+
     async def write_stream(
         self,
         backend: dict[str, Any],
@@ -259,16 +354,24 @@ class StorageManager:
                 tmp_path.unlink(missing_ok=True)
                 raise
         else:
-            # SFTP atomic write
+            # SFTP atomic write with cached directory hierarchy
             base_dir = backend["base_path"].rstrip("/") or "/"
             full_path = posixpath.join(base_dir, rel_path)
             parent_dir = posixpath.dirname(full_path)
             tmp_path = f"{full_path}.tmp.{uuid.uuid4().hex[:8]}"
+            bid = backend["id"]
 
             async with self.acquire_sftp(backend) as sftp:
-                await sftp.makedirs(parent_dir, exist_ok=True)
+                if (bid, parent_dir) not in self._known_dirs:
+                    await self._ensure_sftp_dir(sftp, bid, base_dir, rel_path)
                 try:
-                    async with sftp.open(tmp_path, "wb") as f:
+                    try:
+                        fh = await sftp.open(tmp_path, "wb", block_size=32768)
+                    except asyncssh.SFTPNoSuchFile:
+                        # External dir cleanup invalidated our cache; force-recreate & retry once
+                        await self._ensure_sftp_dir(sftp, bid, base_dir, rel_path, force=True)
+                        fh = await sftp.open(tmp_path, "wb", block_size=32768)
+                    async with fh as f:
                         async for incoming in chunk_iter:
                             if not incoming:
                                 continue
@@ -368,7 +471,7 @@ class StorageManager:
                 base_dir = backend["base_path"].rstrip("/") or "/"
                 full_path = posixpath.join(base_dir, seg["remote_path"])
                 async with self.acquire_sftp(backend) as sftp:
-                    async with sftp.open(full_path, "rb") as f:
+                    async with sftp.open(full_path, "rb", block_size=32768) as f:
                         await f.seek(local_start)
                         remaining = need
                         while remaining > 0:
@@ -414,7 +517,7 @@ class StorageManager:
             base_dir = backend["base_path"].rstrip("/") or "/"
             full_path = posixpath.join(base_dir, seg["remote_path"])
             async with self.acquire_sftp(backend) as sftp:
-                async with sftp.open(full_path, "rb") as f:
+                async with sftp.open(full_path, "rb", block_size=32768) as f:
                     await f.seek(remote_offset)
                     for chunk_idx in range(first_chunk, last_chunk + 1):
                         plain_len = min(c_size, plain_total - chunk_idx * c_size)

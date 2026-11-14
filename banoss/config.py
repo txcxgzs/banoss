@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     master_key: Optional[str] = None
     admin_token: Optional[str] = None
     chunk_size: int = 1024 * 1024  # 1 MiB plaintext per encrypted chunk
-    sftp_idle_timeout: int = 60
+    sftp_idle_timeout: int = 600
     base_domains: list[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1"])
     region: str = "us-east-1"
     clock_skew_seconds: int = 900

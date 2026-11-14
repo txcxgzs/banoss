@@ -14,7 +14,7 @@ from banoss.config import Settings
 from banoss.crypto import CryptoService, encrypted_size
 from banoss.db import Database
 from banoss.s3_auth import generate_presigned_v4_url
-from banoss.storage import StorageManager
+from banoss.storage import StorageManager, make_segment_rel_path
 
 
 async def check_user_quota_or_413(db: Database, user: dict[str, Any], incoming_bytes: int) -> None:
@@ -55,7 +55,7 @@ async def upload_object_from_request(
         )
 
     segment_id = str(uuid.uuid4())
-    rel_path = f"objs/{segment_id[:2]}/{segment_id[2:4]}/{segment_id}"
+    rel_path = make_segment_rel_path(segment_id)
 
     async def _stream():
         async for chunk in request.stream():
@@ -131,7 +131,7 @@ async def create_folder_marker(
         )
 
     segment_id = str(uuid.uuid4())
-    rel_path = f"objs/{segment_id[:2]}/{segment_id[2:4]}/{segment_id}"
+    rel_path = make_segment_rel_path(segment_id)
 
     async def _empty():
         if False:

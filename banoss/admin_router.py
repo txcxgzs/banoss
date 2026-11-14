@@ -62,7 +62,7 @@ class CreateBackendRequest(BaseModel):
     passphrase: str = ""
     base_path: str = Field(min_length=1)
     max_connections: int = Field(default=3, ge=1, le=64)
-    idle_timeout_sec: int = Field(default=60, ge=0, le=86400)
+    idle_timeout_sec: int = Field(default=600, ge=0, le=86400)
     quota_bytes: int = Field(default=0, ge=0)
     is_active: bool = True
     read_only: bool = False
@@ -81,7 +81,7 @@ class TestBackendRequest(BaseModel):
     passphrase: str = ""
     base_path: str = Field(min_length=1)
     max_connections: int = Field(default=3, ge=1, le=64)
-    idle_timeout_sec: int = Field(default=60, ge=0, le=86400)
+    idle_timeout_sec: int = Field(default=600, ge=0, le=86400)
 
 
 class UpdateBackendRequest(BaseModel):
@@ -342,6 +342,7 @@ def create_admin_router(
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        storage.schedule_warm_backend(row)
         return {"backend": _sanitize_backend(row)}
 
     @router.patch("/api/admin/backends/{backend_id}", dependencies=[Depends(require_admin)])
@@ -381,6 +382,8 @@ def create_admin_router(
 
         updated = await db.update_backend(backend_id, updates)
         await storage.invalidate_backend_pool(backend_id)
+        if updated:
+            storage.schedule_warm_backend(updated)
         return {"backend": _sanitize_backend(updated, storage.get_pool_snapshot()) if updated else None}
 
     @router.post("/api/admin/backends/inspect-credential", dependencies=[Depends(require_admin)])
@@ -450,6 +453,8 @@ def create_admin_router(
 
         updated = await db.update_backend(backend_id, updates)
         await storage.invalidate_backend_pool(backend_id)
+        if updated:
+            storage.schedule_warm_backend(updated)
         return {
             "backend": _sanitize_backend(updated, storage.get_pool_snapshot()) if updated else None,
             "probe": probe_res,
