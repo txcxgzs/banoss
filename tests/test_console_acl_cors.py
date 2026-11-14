@@ -464,3 +464,108 @@ def test_user_registration_bucket_requests_and_zero_leakage(tmp_path: Path):
         assert "segments" not in insp
         assert "secret-scnet" not in str(insp).lower()
         assert "remote_path" not in str(insp).lower()
+
+
+def test_aws_chunked_trailer_decoding_in_put_and_multipart(tmp_path: Path):
+    """Ensure STREAMING-UNSIGNED-PAYLOAD-TRAILER and aws-chunked frames are stripped before storing."""
+    import hashlib
+    from botocore.auth import SigV4Auth
+    from botocore.awsrequest import AWSRequest
+    from botocore.credentials import Credentials
+
+    cfg = Settings(
+        data_dir=tmp_path / "data",
+        admin_token="adm-token",
+        base_domains=["testserver", "localhost"],
+    )
+    app = create_app(cfg)
+
+    with TestClient(app) as client:
+        client.post("/api/admin/login", json={"token": "adm-token"}).raise_for_status()
+        bk = client.post(
+            "/api/admin/backends",
+            json={"name": "local-chunked", "protocol": "local", "base_path": str(tmp_path / "store")},
+        ).json()["backend"]
+        usr = client.post("/api/admin/users", json={"username": "sdkuser", "encryption_enabled": True}).json()["user"]
+        client.post(
+            "/api/admin/bindings",
+            json={"user_id": usr["id"], "backend_id": bk["id"], "priority": 10},
+        ).raise_for_status()
+        client.post(
+            "/api/admin/buckets",
+            json={"name": "chunk-box", "owner_user_id": usr["id"]},
+        ).raise_for_status()
+
+        creds = Credentials(usr["access_key"], usr["secret_key"])
+
+        def _signed_headers(method: str, path: str, body: bytes, extra_headers: dict[str, str]) -> dict[str, str]:
+            req = AWSRequest(
+                method=method,
+                url=f"http://testserver{path}",
+                data=body,
+                headers={"Host": "testserver", **extra_headers},
+            )
+            SigV4Auth(creds, "s3", "us-east-1").add_auth(req)
+            return {k: str(v) for k, v in req.headers.items()}
+
+        # 1. Exact reproduction of boto3 STREAMING-UNSIGNED-PAYLOAD-TRAILER with CRC32 trailer
+        plain = b"0123456789ABCDEFGHIJ"
+        framed = (
+            b"14\r\n"
+            + plain
+            + b"\r\n0\r\n"
+            + b"x-amz-checksum-crc32:aBMQFg==\r\n\r\n"
+        )
+        hdrs = _signed_headers(
+            "PUT",
+            "/chunk-box/sample.txt",
+            framed,
+            {
+                "Content-Encoding": "aws-chunked",
+                "X-Amz-Decoded-Content-Length": str(len(plain)),
+                "X-Amz-Trailer": "x-amz-checksum-crc32",
+                "x-amz-sdk-checksum-algorithm": "CRC32",
+                "X-Amz-Content-SHA256": "STREAMING-UNSIGNED-PAYLOAD-TRAILER",
+            },
+        )
+        # Send header value as signed payload indicator (testserver doesn't automatically swap x-amz-content-sha256 unless passed)
+        put_resp = client.put("/chunk-box/sample.txt", content=framed, headers=hdrs)
+        assert put_resp.status_code == 200, put_resp.text
+        expected_etag = f'"{hashlib.md5(plain).hexdigest()}"'
+        assert put_resp.headers["etag"] == expected_etag
+
+        get_hdrs = _signed_headers("GET", "/chunk-box/sample.txt", b"", {"X-Amz-Content-SHA256": hashlib.sha256(b"").hexdigest()})
+        get_resp = client.get("/chunk-box/sample.txt", headers=get_hdrs)
+        assert get_resp.status_code == 200
+        assert get_resp.content == plain
+        assert int(get_resp.headers["content-length"]) == len(plain)
+
+        # 2. Multi-chunk signed+trailer format (STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER) across chunks
+        part1 = b"Hello-"
+        part2 = b"BanOSS-World!"
+        framed_multi = (
+            b"6;chunk-signature=deadbeef\r\n"
+            + part1
+            + b"\r\nd;chunk-signature=cafebabe\r\n"
+            + part2
+            + b"\r\n0;chunk-signature=00000000\r\n"
+            + b"x-amz-checksum-crc32:AAAAAA==\r\n\r\n"
+        )
+        hdrs_multi = _signed_headers(
+            "PUT",
+            "/chunk-box/multi.txt",
+            framed_multi,
+            {
+                "Content-Encoding": "aws-chunked",
+                "X-Amz-Decoded-Content-Length": str(len(part1) + len(part2)),
+                "X-Amz-Content-SHA256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            },
+        )
+        put2 = client.put("/chunk-box/multi.txt", content=framed_multi, headers=hdrs_multi)
+        assert put2.status_code == 200
+        get2 = client.get(
+            "/chunk-box/multi.txt",
+            headers=_signed_headers("GET", "/chunk-box/multi.txt", b"", {"X-Amz-Content-SHA256": hashlib.sha256(b"").hexdigest()}),
+        )
+        assert get2.status_code == 200
+        assert get2.content == part1 + part2

@@ -367,19 +367,28 @@ def generate_presigned_v4_url(
     return f"{base_url.rstrip('/')}{canonical_uri}?{canonical_qs}&X-Amz-Signature={signature}"
 
 
+def _is_aws_chunked_request(request: Request) -> bool:
+    """Return True when the request body uses AWS aws-chunked streaming framing."""
+    content_sha = (request.headers.get("x-amz-content-sha256") or "").strip().upper()
+    if content_sha.startswith("STREAMING-"):
+        return True
+    content_enc = (request.headers.get("content-encoding") or "").lower()
+    encodings = [part.strip() for part in content_enc.split(",") if part.strip()]
+    return "aws-chunked" in encodings
+
+
 async def iter_request_payload(request: Request) -> AsyncIterator[bytes]:
-    """Yield raw object payload bytes, transparently decoding AWS chunked streaming uploads."""
-    content_sha = request.headers.get("x-amz-content-sha256", "")
-    if content_sha != "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+    """Yield raw object payload bytes, transparently decoding all aws-chunked streaming uploads."""
+    if not _is_aws_chunked_request(request):
         async for chunk in request.stream():
             if chunk:
                 yield chunk
         return
 
-    # Decode AWS chunked encoding: <hex>;chunk-signature=<sig>\r\n<data>\r\n ... 0;chunk-signature=...\r\n\r\n
+    # Decode AWS aws-chunked encoding (signed or unsigned, with or without trailing headers):
+    #   <hex-size>[;chunk-signature=<sig>]\r\n<data>\r\n ... 0[;chunk-signature=<sig>]\r\n[trailers\r\n]\r\n
     buf = bytearray()
     stream_iter = request.stream()
-    done = False
 
     async def _fill(min_bytes: int = 1) -> bool:
         while len(buf) < min_bytes:
@@ -391,7 +400,7 @@ async def iter_request_payload(request: Request) -> AsyncIterator[bytes]:
                 buf.extend(nxt)
         return True
 
-    while not done:
+    while True:
         while True:
             crlf = buf.find(b"\r\n")
             if crlf != -1:
@@ -402,17 +411,26 @@ async def iter_request_payload(request: Request) -> AsyncIterator[bytes]:
                 return
 
         size_hex = header_line.split(";", 1)[0].strip()
+        if not size_hex:
+            continue
         chunk_len = int(size_hex, 16)
         if chunk_len == 0:
-            done = True
-            break
+            # Drain any trailing headers (e.g. x-amz-checksum-crc32) and terminating CRLF
+            async for _ in stream_iter:
+                pass
+            return
 
-        while len(buf) < chunk_len + 2:
-            if not await _fill(chunk_len + 2):
+        remaining = chunk_len
+        while remaining > 0:
+            if not buf and not await _fill(1):
+                return
+            take = min(len(buf), remaining)
+            yield bytes(buf[:take])
+            del buf[:take]
+            remaining -= take
+
+        while len(buf) < 2:
+            if not await _fill(2):
                 break
-        data = bytes(buf[:chunk_len])
-        del buf[:chunk_len]
         if buf[:2] == b"\r\n":
             del buf[:2]
-        if data:
-            yield data
