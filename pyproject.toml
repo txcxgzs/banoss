@@ -1,0 +1,35 @@
+[project]
+name = "banoss"
+version = "0.1.0"
+description = "Multi-user, multi-SFTP-backend S3-compatible object storage gateway with SQLite metadata index and transparent AES-256-GCM encryption"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.20.0",
+    "asyncssh>=2.17.0",
+    "cryptography>=43.0.0",
+    "fastapi>=0.115.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.12",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "boto3>=1.35.0",
+    "httpx>=0.27.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[project.scripts]
+banoss = "banoss.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

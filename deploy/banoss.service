@@ -1,0 +1,15 @@
+[Unit]
+Description=BanOSS S3-to-SFTP Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/banoss
+EnvironmentFile=-/opt/banoss/.env
+ExecStart=/opt/banoss/.venv/bin/banoss --host 127.0.0.1 --port 9000 --data-dir /opt/banoss/data
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

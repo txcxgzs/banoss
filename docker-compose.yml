@@ -1,0 +1,16 @@
+services:
+  banoss:
+    build: .
+    container_name: banoss
+    restart: unless-stopped
+    ports:
+      - "${BANOSS_BIND_IP:-127.0.0.1}:${BANOSS_PORT:-9000}:9000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      BANOSS_HOST: "0.0.0.0"
+      BANOSS_PORT: "9000"
+      BANOSS_DATA_DIR: "/app/data"
+    volumes:
+      - ./data:/app/data

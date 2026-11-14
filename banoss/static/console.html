@@ -1,0 +1,1596 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BanOSS · 对象存储控制台</title>
+  <style>
+    :root {
+      --nav-bg: #161a23;
+      --nav-border: #282e39;
+      --brand: #ff6a00;
+      --brand-hover: #e55e00;
+      --primary: #1677ff;
+      --primary-hover: #0958d9;
+      --primary-soft: #eef5ff;
+      --canvas: #f3f5f8;
+      --surface: #ffffff;
+      --surface-2: #fafbfc;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --text: #111827;
+      --text-2: #374151;
+      --text-muted: #6b7280;
+      --text-light: #9ca3af;
+      --green: #00a870;
+      --green-bg: #e8f8f2;
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --radius: 8px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
+      --shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18);
+      --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    .hidden { display: none !important; }
+    .mono { font-family: var(--font-mono); font-size: 12px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .topbar {
+      height: 50px;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--nav-border);
+      color: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .logo-wrap { display: flex; align-items: center; gap: 9px; color: #fff; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .logo-divider { width: 1px; height: 16px; background: #374151; }
+    .product-name { font-size: 13px; color: #d1d5db; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .region-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+      color: #e5e7eb; padding: 2px 9px; border-radius: 5px; font-size: 11.5px;
+    }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.22); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .nav-chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 5px; font-size: 12px;
+      background: rgba(255,255,255,.07); color: #e5e7eb; border: 1px solid rgba(255,255,255,.12);
+    }
+    .nav-link {
+      color: #d1d5db; text-decoration: none; font-size: 12.5px; padding: 5px 10px;
+      border-radius: 5px; border: 1px solid rgba(255,255,255,.14); background: transparent;
+      cursor: pointer; transition: all .15s;
+    }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 32px; padding: 0 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      border: 1px solid transparent; cursor: pointer; background: var(--primary); color: #fff;
+      transition: all .15s; white-space: nowrap; text-decoration: none; font-family: inherit;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn.orange { background: var(--brand); }
+    .btn.orange:hover { background: var(--brand-hover); }
+    .btn.sec { background: #fff; color: var(--text-2); border-color: var(--border-strong); }
+    .btn.sec:hover { border-color: var(--primary); color: var(--primary); background: #f8fbff; }
+    .btn.danger { background: var(--red); color: #fff; }
+    .btn.danger:hover { background: #b91c1c; }
+    .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-link {
+      background: none; border: none; padding: 2px 4px; color: var(--primary);
+      cursor: pointer; font-size: 12.5px; font-weight: 500; font-family: inherit;
+    }
+    .btn-link:hover { color: var(--primary-hover); text-decoration: underline; }
+    .btn-link.danger { color: var(--red); }
+    .btn-link.danger:hover { color: #b91c1c; }
+    .action-sep { color: #e5e7eb; user-select: none; }
+
+    .form-row { margin-bottom: 14px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+    input, textarea {
+      width: 100%; background: var(--surface); border: 1px solid var(--border-strong);
+      border-radius: 6px; color: var(--text); padding: 8px 11px; font-size: 13px;
+      font-family: inherit; transition: border-color .15s, box-shadow .15s;
+    }
+    textarea { font-family: var(--font-mono); min-height: 92px; resize: vertical; font-size: 12px; line-height: 1.45; }
+    input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22, 119, 255, .12); }
+    input[type="checkbox"] { width: auto; height: auto; accent-color: var(--primary); cursor: pointer; }
+    .input-group { position: relative; display: flex; align-items: center; }
+    .input-group input { padding-right: 36px; }
+    .input-eye {
+      position: absolute; right: 6px; background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 4px; border-radius: 4px; display: inline-flex;
+    }
+    .input-eye:hover { color: var(--text); background: #f3f4f6; }
+
+    .cselect { position: relative; width: 100%; }
+    .cselect-btn {
+      width: 100%; height: 36px; padding: 0 32px 0 11px;
+      background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 13px; color: var(--text); cursor: pointer; text-align: left; font-family: inherit;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .cselect.open .cselect-btn, .cselect-btn:focus {
+      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22, 119, 255, .12);
+    }
+    .cselect-arrow {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); pointer-events: none; transition: transform .15s;
+    }
+    .cselect.open .cselect-arrow { transform: translateY(-50%) rotate(180deg); color: var(--primary); }
+    .cselect-menu {
+      position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 95;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: var(--shadow-md); padding: 4px; max-height: 240px; overflow-y: auto;
+    }
+    .cselect-opt {
+      padding: 7px 10px; border-radius: 5px; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 13px; color: var(--text);
+    }
+    .cselect-opt:hover { background: #f3f4f6; }
+    .cselect-opt.active { background: var(--primary-soft); color: var(--primary); font-weight: 500; }
+
+    .seg-group {
+      display: inline-flex; background: #f3f4f6; border: 1px solid var(--border);
+      padding: 2px; border-radius: 6px; gap: 2px; flex-wrap: wrap;
+    }
+    .seg-btn {
+      border: none; background: transparent; color: var(--text-muted); font-family: inherit;
+      padding: 5px 12px; border-radius: 5px; font-size: 12.5px; font-weight: 500;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .seg-btn.active { background: #fff; color: var(--text); box-shadow: var(--shadow-sm); }
+
+    .login-shell {
+      min-height: calc(100vh - 50px); display: flex; align-items: center; justify-content: center; padding: 28px 16px;
+    }
+    .login-card-wrap {
+      width: 100%; max-width: 860px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: var(--shadow-md); overflow: hidden;
+      display: grid; grid-template-columns: 1.05fr 1fr;
+    }
+    .login-hero {
+      background: linear-gradient(155deg, #161a23 0%, #202838 100%);
+      color: #f9fafb; padding: 36px 32px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .login-hero h1 { font-size: 22px; margin: 16px 0 8px; font-weight: 600; }
+    .login-hero p { color: #9ca3af; font-size: 13px; margin: 0 0 24px; }
+    .hero-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+    .hero-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #d1d5db; }
+    .hero-icon {
+      width: 22px; height: 22px; border-radius: 6px; background: rgba(255,106,0,.16);
+      color: #ff8c38; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .login-pane { padding: 30px 34px; display: flex; flex-direction: column; justify-content: center; }
+    .login-tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .login-tab {
+      padding-bottom: 10px; font-size: 14px; font-weight: 500; color: var(--text-muted);
+      border: none; background: none; border-bottom: 2px solid transparent; cursor: pointer;
+      font-family: inherit;
+    }
+    .login-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+    .app-shell { display: flex; min-height: calc(100vh - 50px); }
+    .sidebar {
+      width: 244px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+      padding: 14px 10px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .side-group-label {
+      font-size: 11px; font-weight: 600; color: var(--text-light); padding: 8px 12px 4px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .side-item {
+      display: flex; align-items: center; justify-content: space-between; width: 100%;
+      padding: 8px 12px; border-radius: 6px; border: none; background: transparent;
+      color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left;
+      transition: all .12s; font-family: inherit;
+    }
+    .side-item-inner { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .side-item:hover { background: #f3f4f6; color: var(--text); }
+    .side-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+    .side-divider { height: 1px; background: var(--border); margin: 8px 10px; }
+    .bucket-search-box { padding: 4px 8px 6px; }
+    .bucket-search-box input { height: 30px; font-size: 12px; padding: 4px 9px; background: #fafbfc; }
+    .bucket-list { flex: 1; overflow-y: auto; max-height: 440px; padding: 0 2px; }
+    .bucket-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 12.5px; color: var(--text-2); margin-bottom: 2px;
+    }
+    .bucket-item:hover { background: #f3f4f6; }
+    .bucket-item.active { background: #fff4ec; color: #c2410c; font-weight: 600; }
+    .bucket-name-wrap { display: flex; align-items: center; gap: 7px; min-width: 0; }
+
+    .main-area { flex: 1; min-width: 0; padding: 20px 24px 36px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .page-title-block h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .page-title-block p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-muted); }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 15px 18px; box-shadow: var(--shadow-sm); display: flex; align-items: flex-start; gap: 13px;
+    }
+    .kpi-icon { width: 38px; height: 38px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .kpi-icon.blue { background: #eef5ff; color: var(--primary); }
+    .kpi-icon.orange { background: #fff3eb; color: var(--brand); }
+    .kpi-icon.green { background: var(--green-bg); color: var(--green); }
+    .kpi-icon.purple { background: #f3e8ff; color: #7c3aed; }
+    .kpi-label { font-size: 12px; color: var(--text-muted); }
+    .kpi-val { font-size: 21px; font-weight: 700; color: var(--text); margin-top: 2px; line-height: 1.25; }
+    .kpi-sub { font-size: 11.5px; color: var(--text-light); margin-top: 4px; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm);
+    }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .card-title { margin: 0; font-size: 14.5px; font-weight: 600; }
+    .overview-split { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; }
+
+    .alert-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px;
+      border: 1px solid #fcd34d; background: #fffbeb; color: #92400e; box-shadow: var(--shadow-sm);
+    }
+
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; box-shadow: var(--shadow-sm); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: var(--surface-2); color: var(--text-muted); font-weight: 500; font-size: 12px;
+      padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody td { padding: 11px 14px; border-bottom: 1px solid #f1f3f5; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f9fbff; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+      border-radius: 999px; font-size: 11.5px; font-weight: 500; background: #f3f4f6; color: var(--text-2);
+    }
+    .badge.ok { background: var(--green-bg); color: #047857; }
+    .badge.warn { background: var(--amber-bg); color: #b45309; }
+    .badge.err { background: var(--red-bg); color: #b91c1c; }
+    .badge.blue { background: var(--primary-soft); color: var(--primary); }
+
+    .prog-wrap { display: flex; align-items: center; gap: 8px; }
+    .prog-bar { width: 76px; height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+    .prog-bar > div { height: 100%; background: var(--primary); border-radius: 999px; }
+
+    .bucket-banner {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px 20px 0; margin-bottom: 16px; box-shadow: var(--shadow-sm);
+    }
+    .bucket-banner-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .bucket-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .bucket-title-row h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .bucket-meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .sub-tabs { display: flex; gap: 24px; margin-top: 14px; border-top: 1px solid #f1f3f5; padding-top: 2px; }
+    .sub-tab {
+      background: none; border: none; padding: 10px 2px; font-size: 13px; font-weight: 500;
+      color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit;
+    }
+    .sub-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .crumb {
+      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+      font-size: 12.5px; color: var(--text-muted); padding: 8px 12px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px;
+    }
+    .crumb button { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 12.5px; padding: 1px 4px; border-radius: 4px; font-family: inherit; }
+    .crumb button:hover { background: var(--primary-soft); }
+    .obj-cell { display: flex; align-items: center; gap: 9px; min-width: 0; }
+
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; }
+    .gal-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; transition: box-shadow .15s, border-color .15s; cursor: pointer;
+    }
+    .gal-card:hover { border-color: #93c5fd; box-shadow: var(--shadow-md); }
+    .gal-thumb {
+      height: 120px; background: #f8fafc; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border-bottom: 1px solid #f1f3f5;
+    }
+    .gal-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .gal-meta { padding: 9px 10px; }
+    .gal-name { font-size: 12.5px; font-weight: 500; color: var(--text); }
+    .gal-sub { font-size: 11px; color: var(--text-light); margin-top: 3px; display: flex; justify-content: space-between; }
+
+    .acl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .acl-option {
+      border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 16px; cursor: pointer; transition: all .15s;
+    }
+    .acl-option:hover { border-color: #93c5fd; }
+    .acl-option.active { border-color: var(--primary); background: var(--primary-soft); }
+    .acl-option h4 { margin: 0 0 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .acl-option p { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+    .kv-list { display: flex; flex-direction: column; gap: 8px; }
+    .kv-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    }
+    .kv-key { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+    .kv-val { font-family: var(--font-mono); font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 8px; min-width: 0; }
+    pre {
+      background: #181c24; color: #e5e7eb; padding: 12px 14px; border-radius: 6px;
+      font-family: var(--font-mono); font-size: 12px; overflow: auto; line-height: 1.5; margin: 0;
+    }
+
+    .dropzone {
+      border: 1.5px dashed var(--border-strong); border-radius: 8px; padding: 24px 16px;
+      text-align: center; background: #fafbfc; cursor: pointer; transition: all .15s;
+    }
+    .dropzone.dragover { border-color: var(--primary); background: var(--primary-soft); }
+    .up-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 8px 10px; background: #fafbfc; border: 1px solid var(--border); border-radius: 6px; margin-top: 8px;
+    }
+    .up-track { flex: 1; height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .up-track > div { height: 100%; background: var(--primary); width: 0%; transition: width .1s; }
+
+    .drawer-bg {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, .45); backdrop-filter: blur(2px);
+      z-index: 80; display: flex; justify-content: flex-end;
+    }
+    .drawer {
+      width: 100%; max-width: 560px; height: 100%; background: var(--surface);
+      box-shadow: -12px 0 36px rgba(15, 23, 42, .18); display: flex; flex-direction: column;
+      animation: slideIn .18s ease-out;
+    }
+    .drawer.wide { max-width: 680px; }
+    @keyframes slideIn { from { transform: translateX(24px); opacity: .6; } to { transform: translateX(0); opacity: 1; } }
+    .drawer-head {
+      padding: 16px 22px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+    }
+    .drawer-head h3 { margin: 0; font-size: 16px; font-weight: 600; }
+    .drawer-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+    .drawer-foot {
+      padding: 13px 22px; border-top: 1px solid var(--border); background: var(--surface-2);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-shrink: 0;
+    }
+    .form-section-title {
+      font-size: 12px; font-weight: 600; color: var(--text-muted); padding-bottom: 6px;
+      border-bottom: 1px solid #f1f3f5; margin: 16px 0 12px; display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, .45); backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center; z-index: 90; padding: 20px;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .modal-head {
+      padding: 15px 20px; border-bottom: 1px solid #f1f3f5;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { margin: 0; font-size: 15.5px; font-weight: 600; }
+    .modal-body-pad { padding: 18px 20px; }
+    .modal-foot { padding: 12px 20px; background: #fafbfc; border-top: 1px solid #f1f3f5; display: flex; justify-content: flex-end; gap: 8px; }
+    .close-x {
+      background: none; border: none; width: 28px; height: 28px; border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 18px;
+      color: var(--text-muted); cursor: pointer;
+    }
+    .close-x:hover { background: #f3f4f6; color: var(--text); }
+
+    .toast {
+      position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-left: 3px solid var(--primary); padding: 10px 18px; border-radius: 7px;
+      z-index: 120; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md);
+      display: flex; align-items: center; gap: 8px; max-width: 540px;
+    }
+    .toast.err { border-left-color: var(--red); }
+    .toast.ok { border-left-color: var(--green); }
+
+    @media (max-width: 960px) {
+      .overview-split, .login-card-wrap, .acl-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 780px) {
+      .app-shell { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="logo-wrap" href="#" onclick="return false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF6A00"/>
+          <path d="M12 6.2L17 9.1V14.9L12 17.8L7 14.9V9.1L12 6.2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M7 9.1L12 12L17 9.1M12 12V17.8" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        <span>BanOSS</span>
+      </a>
+      <span class="logo-divider"></span>
+      <span class="product-name">
+        对象存储 OSS
+        <span class="region-pill"><span class="pulse-dot"></span><span id="header-region">us-east-1</span></span>
+      </span>
+    </div>
+    <div class="topbar-right">
+      <span id="user-badge" class="nav-chip hidden">未登录</span>
+      <button id="logout-btn" class="nav-link hidden">退出登录</button>
+    </div>
+  </header>
+
+  <!-- Login / Register View -->
+  <section id="login-view" class="login-shell hidden">
+    <div class="login-card-wrap">
+      <div class="login-hero">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF6A00"/>
+              <path d="M12 6.2L17 9.1V14.9L12 17.8L7 14.9V9.1L12 6.2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M7 9.1L12 12L17 9.1M12 12V17.8" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+            <span style="font-weight:600;font-size:16px">BanOSS Cloud Storage</span>
+          </div>
+          <h1>安全加密对象存储服务</h1>
+          <p>兼容标准 S3 协议的企业级加密云存储空间，提供稳定高速的大文件与多媒体托管体验。</p>
+          <ul class="hero-list">
+            <li><span class="hero-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><span><strong>端到端加密保护</strong>：AES-256-GCM 透明加密落盘，保障数据资产安全</span></li>
+            <li><span class="hero-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span><span><strong>大文件高速分片</strong>：网页支持拖拽与文件夹直传，自动分片断点合并</span></li>
+            <li><span class="hero-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span><span><strong>精细权限与外链管控</strong>：私有临时分享、公共读图床与跨域 CORS</span></li>
+          </ul>
+        </div>
+        <div style="font-size:11.5px;color:#6b7280;margin-top:24px">S3 Compatible · AES-256-GCM Encryption · SigV4 Sharing</div>
+      </div>
+
+      <div class="login-pane">
+        <div class="login-tabs">
+          <button id="auth-tab-login" class="login-tab active" onclick="switchAuthMode('login')">登录控制台</button>
+          <button id="auth-tab-reg" class="login-tab" onclick="switchAuthMode('register')">注册新账号</button>
+        </div>
+
+        <div id="auth-login-pane">
+          <h2 style="margin:0 0 6px;font-size:19px;font-weight:600">登录对象存储 OSS</h2>
+          <p style="margin:0 0 20px;color:var(--text-muted);font-size:12.5px">支持使用注册用户名 + 密码，或 Access Key + Secret Key 登录</p>
+          <div class="form-row">
+            <label>用户名 或 Access Key ID</label>
+            <input id="login-account" placeholder="用户名 或 BANOSS..." onkeydown="if(event.key==='Enter')doLogin()" />
+          </div>
+          <div class="form-row">
+            <label>登录密码 或 Secret Access Key</label>
+            <div class="input-group">
+              <input id="login-secret" type="password" placeholder="输入密码或 Secret Key" onkeydown="if(event.key==='Enter')doLogin()" />
+              <button type="button" class="input-eye" onclick="toggleSecret('login-secret')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn orange" style="width:100%;height:38px;margin-top:6px;font-size:14px" onclick="doLogin()">登录控制台</button>
+        </div>
+
+        <div id="auth-reg-pane" class="hidden">
+          <h2 style="margin:0 0 6px;font-size:19px;font-weight:600">注册并申请 Bucket</h2>
+          <p style="margin:0 0 16px;color:var(--text-muted);font-size:12.5px">注册后自动签发 S3 AK/SK 凭证，可顺便提交首个 Bucket 开通申请</p>
+          <div class="form-grid">
+            <div class="form-row"><label>用户名 (3-32位字母/数字)</label><input id="reg-user" placeholder="例如 dev-alice" /></div>
+            <div class="form-row"><label>登录密码 (至少 6 位)</label><input id="reg-pass" type="password" placeholder="设置登录密码" /></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>申请 Bucket 名称（可选）</label><input id="reg-bucket" placeholder="小写字母/数字/短横线" /></div>
+            <div class="form-row"><label>申请空间大小 (GiB)</label><input id="reg-quota" type="number" value="20" min="1" /></div>
+          </div>
+          <div class="form-row"><label>用途说明（可选）</label><input id="reg-reason" placeholder="例如：项目模型与数据集存储" /></div>
+          <button class="btn orange" style="width:100%;height:38px;margin-top:4px;font-size:14px" onclick="doRegister()">注册并进入控制台</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <div id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="side-group-label">控制台</div>
+      <button class="side-item active" data-tab="overview">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>总览与凭证接入</span>
+        </span>
+      </button>
+      <button class="side-item" data-tab="oss">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+          <span>Bucket 文件管理</span>
+        </span>
+        <span id="sidebar-bucket-count" class="badge" style="padding:0 6px;font-size:10px">0</span>
+      </button>
+      <button class="side-item" data-tab="requests">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          <span>Bucket 申请记录</span>
+        </span>
+        <span id="sidebar-req-badge" class="badge warn hidden" style="padding:0 6px;font-size:10px">0</span>
+      </button>
+
+      <div class="side-divider"></div>
+      <div class="side-group-label" style="padding-top:2px">
+        <span>Bucket 列表</span>
+        <button class="btn-link" onclick="handleCreateOrApplyBucket()">+ 新建 / 申请</button>
+      </div>
+      <div class="bucket-search-box">
+        <input id="sidebar-bucket-filter" placeholder="搜索 Bucket..." oninput="renderSidebarBuckets()" />
+      </div>
+      <div id="sidebar-buckets" class="bucket-list"></div>
+    </aside>
+
+    <main class="main-area">
+      <!-- Overview -->
+      <div id="tab-overview" class="tab-pane">
+        <div class="page-header">
+          <div class="page-title-block">
+            <h2>对象存储 OSS 概览</h2>
+            <p>查看个人容量用量、S3 客户端接入凭证与存储空间状态</p>
+          </div>
+          <div class="actions">
+            <button class="btn orange" onclick="handleCreateOrApplyBucket()">+ 申请 / 创建 Bucket</button>
+            <button class="btn sec" onclick="loadAll()">刷新状态</button>
+          </div>
+        </div>
+        <div id="user-quota-banner" class="hidden"></div>
+        <div class="kpi-grid" id="stats-grid"></div>
+        <div id="overview-extra"></div>
+      </div>
+
+      <!-- OSS Workspace -->
+      <div id="tab-oss" class="tab-pane hidden">
+        <div id="oss-empty" class="card hidden" style="text-align:center;padding:52px 20px">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="margin-bottom:10px">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+          </svg>
+          <h3 style="margin:0 0 6px;font-size:16px">暂无可用的存储空间 (Bucket)</h3>
+          <p id="oss-empty-hint" style="margin:0 0 18px;color:var(--text-muted);font-size:13px"></p>
+          <button class="btn orange" onclick="handleCreateOrApplyBucket()">+ 立即创建 / 申请 Bucket</button>
+        </div>
+
+        <div id="oss-workspace" class="hidden">
+          <div class="bucket-banner">
+            <div class="bucket-banner-top">
+              <div>
+                <div class="bucket-title-row">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+                  </svg>
+                  <h2 id="oss-bucket-title" class="mono">-</h2>
+                  <span id="oss-bucket-acl-badge" class="badge">私有</span>
+                </div>
+                <div id="oss-bucket-meta" class="bucket-meta"></div>
+              </div>
+              <div class="actions">
+                <button class="btn danger sm" onclick="deleteCurrentBucket()">删除 Bucket</button>
+              </div>
+            </div>
+            <div class="sub-tabs">
+              <button class="sub-tab active" data-subtab="files" onclick="switchOssSubtab('files')">文件列表</button>
+              <button class="sub-tab" data-subtab="access" onclick="switchOssSubtab('access')">权限与跨域 (ACL / CORS)</button>
+            </div>
+          </div>
+
+          <div id="subtab-files">
+            <div class="toolbar">
+              <div class="actions">
+                <button class="btn orange" onclick="openUploadDrawer()">上传文件</button>
+                <button class="btn sec" onclick="openFolderModal()">新建目录</button>
+                <button id="btn-batch-del" class="btn danger hidden" onclick="deleteSelectedObjects()">批量删除 (<span id="sel-count">0</span>)</button>
+                <button class="btn sec" onclick="refreshFiles()">刷新</button>
+              </div>
+              <div class="actions">
+                <input id="file-filter" style="width:210px;height:32px" placeholder="过滤当前目录文件名..." oninput="renderFiles()" />
+                <div class="seg-group">
+                  <button id="view-list-btn" class="seg-btn active" onclick="setViewMode('list')">列表</button>
+                  <button id="view-grid-btn" class="seg-btn" onclick="setViewMode('grid')">画廊</button>
+                </div>
+              </div>
+            </div>
+            <div id="oss-crumb" class="crumb"></div>
+            <div id="files-list-wrap" class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:36px"><input id="chk-all" type="checkbox" onchange="toggleSelectAll(this.checked)" /></th>
+                    <th>名称 / 对象 Key</th>
+                    <th style="width:110px">大小</th>
+                    <th style="width:160px">类型</th>
+                    <th style="width:170px">最后修改时间</th>
+                    <th style="width:190px">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="files-tbody"></tbody>
+              </table>
+            </div>
+            <div id="files-grid-wrap" class="gallery-grid hidden"></div>
+          </div>
+
+          <div id="subtab-access" class="hidden">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">读写权限 (ACL)</h3>
+                <button class="btn sm" onclick="saveInlineAcl()">保存 ACL 设置</button>
+              </div>
+              <div class="acl-grid">
+                <div class="acl-option" id="acl-opt-private" onclick="pickInlineAcl('private')">
+                  <h4>私有 (Private) <span class="badge ok">默认推荐</span></h4>
+                  <p>所有文件读写及分享均需通过凭据或限时签名 URL 鉴权。</p>
+                </div>
+                <div class="acl-option" id="acl-opt-public" onclick="pickInlineAcl('public-read')">
+                  <h4>公共读 (Public Read) <span class="badge warn">外链直访</span></h4>
+                  <p>允许通过固定直链免签名 GET/HEAD 读取，写入与删除仍需鉴权，适合图床与静态资源。</p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">跨域资源共享 (CORS)</h3>
+                <div class="actions">
+                  <button class="btn sec sm" onclick="presetInlineCors()">一键允许全部源 (*)</button>
+                  <button class="btn sm" onclick="saveInlineCors()">保存 CORS 规则</button>
+                </div>
+              </div>
+              <p style="margin:0 0 10px;font-size:12px;color:var(--text-muted)">配置允许浏览器前端直接调用该 Bucket 资源的源域名与 HTTP 方法（JSON 数组格式）。</p>
+              <textarea id="inline-cors-json" style="min-height:170px"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bucket Requests Tab -->
+      <div id="tab-requests" class="tab-pane hidden">
+        <div class="page-header">
+          <div class="page-title-block">
+            <h2>Bucket 与存储空间申请</h2>
+            <p>提交 Bucket 开通申请后由管理员审核分配容量，审批通过即自动生效</p>
+          </div>
+          <div class="actions">
+            <button class="btn orange" onclick="openApplyBucketDrawer()">+ 提交 Bucket 申请</button>
+            <button class="btn sec" onclick="loadAll()">刷新状态</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>申请 Bucket 名称</th>
+                <th>访问权限</th>
+                <th>申请容量</th>
+                <th>用途说明</th>
+                <th>审批状态</th>
+                <th>管理员备注</th>
+                <th>申请时间</th>
+              </tr>
+            </thead>
+            <tbody id="requests-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Right Slide-Over Drawer -->
+  <div id="drawer-bg" class="drawer-bg hidden">
+    <div id="drawer-panel" class="drawer">
+      <div class="drawer-head">
+        <h3 id="drawer-title"></h3>
+        <button class="close-x" onclick="closeDrawer()">&times;</button>
+      </div>
+      <div id="drawer-body" class="drawer-body"></div>
+      <div id="drawer-foot" class="drawer-foot"></div>
+    </div>
+  </div>
+
+  <!-- Centered Compact Dialog -->
+  <div id="modal-bg" class="modal-bg hidden">
+    <div class="modal" id="modal-panel"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+    const state = {
+      me: null,
+      buckets: [],
+      requests: [],
+      currentBucket: "",
+      currentPrefix: "",
+      folders: [],
+      files: [],
+      selectedFolders: new Set(),
+      selectedKeys: new Set(),
+      inlineAcl: "private",
+      viewMode: "list",
+    };
+
+    const MULTIPART_THRESHOLD = 24 * 1024 * 1024;
+    const PART_SIZE = 24 * 1024 * 1024;
+
+    const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    const escJs = s => String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\r/g,"\\r").replace(/\n/g,"\\n");
+
+    let toastTimer = null;
+    function toast(msg, kind = "info") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = "toast" + (kind === "err" ? " err" : (kind === "ok" ? " ok" : ""));
+      el.classList.remove("hidden");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add("hidden"), 4200);
+    }
+
+    function fmtBytes(n) {
+      n = Number(n || 0);
+      if (n < 1024) return n + " B";
+      const u = ["KB", "MB", "GB", "TB", "PB"];
+      let i = -1;
+      do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+      return n.toFixed(2) + " " + u[i];
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return "-";
+      try { return new Date(iso).toLocaleString("zh-CN", { hour12: false }); } catch { return iso; }
+    }
+
+    function toggleSecret(id) {
+      const inp = document.getElementById(id);
+      inp.type = inp.type === "password" ? "text" : "password";
+    }
+
+    async function copyText(text) {
+      try { await navigator.clipboard.writeText(text); toast("已复制到剪贴板", "ok"); }
+      catch { toast("复制失败，请手动复制", "err"); }
+    }
+
+    function pickSeg(groupId, val, btnEl) {
+      const grp = document.getElementById(groupId);
+      if (grp) grp.dataset.val = val;
+      grp.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+    }
+
+    async function api(url, opts = {}) {
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts,
+      });
+      if (res.status === 401 && !url.endsWith("/login") && !url.endsWith("/register")) {
+        showLogin();
+        throw new Error("未登录或会话已过期");
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function switchAuthMode(mode) {
+      const isReg = mode === "register";
+      document.getElementById("auth-tab-login").classList.toggle("active", !isReg);
+      document.getElementById("auth-tab-reg").classList.toggle("active", isReg);
+      document.getElementById("auth-login-pane").classList.toggle("hidden", isReg);
+      document.getElementById("auth-reg-pane").classList.toggle("hidden", !isReg);
+    }
+
+    function showLogin() {
+      document.getElementById("login-view").classList.remove("hidden");
+      document.getElementById("app-shell").classList.add("hidden");
+      document.getElementById("logout-btn").classList.add("hidden");
+      document.getElementById("user-badge").classList.add("hidden");
+    }
+
+    function showApp() {
+      document.getElementById("login-view").classList.add("hidden");
+      document.getElementById("app-shell").classList.remove("hidden");
+      document.getElementById("logout-btn").classList.remove("hidden");
+      document.getElementById("user-badge").classList.remove("hidden");
+    }
+
+    async function doLogin() {
+      try {
+        await api("/api/console/login", {
+          method: "POST",
+          body: JSON.stringify({
+            account: document.getElementById("login-account").value,
+            secret: document.getElementById("login-secret").value,
+          }),
+        });
+        showApp();
+        await loadAll();
+        toast("登录成功", "ok");
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    async function doRegister() {
+      const username = document.getElementById("reg-user").value.trim();
+      const password = document.getElementById("reg-pass").value;
+      const bucketName = document.getElementById("reg-bucket").value.trim().toLowerCase();
+      const quotaGiB = Number(document.getElementById("reg-quota").value || 20);
+      const reason = document.getElementById("reg-reason").value.trim();
+      if (!username || password.length < 6) { toast("请填写用户名及至少 6 位密码", "err"); return; }
+      try {
+        const res = await api("/api/console/register", {
+          method: "POST",
+          body: JSON.stringify({
+            username,
+            password,
+            bucket_name: bucketName || null,
+            requested_quota_bytes: Math.round(quotaGiB * (1024 ** 3)),
+            reason,
+          }),
+        });
+        showApp();
+        await loadAll();
+        toast(res.bucket_request ? "注册成功，已同时提交 Bucket 开通申请" : "账号注册成功", "ok");
+        openModal("账号创建成功 · 请妥善保存 S3 密钥", `
+          <p style="margin:0 0 12px;font-size:12.5px;color:var(--text-muted)">您的账号已登录，以下 S3 凭证也可随时在「总览与凭证接入」查看。</p>
+          <div class="kv-list">
+            <div class="kv-row"><span class="kv-key">用户名</span><span class="kv-val">${esc(res.user.username)}</span></div>
+            <div class="kv-row"><span class="kv-key">Access Key</span><span class="kv-val"><span>${esc(res.user.access_key)}</span><button class="btn-link" onclick="copyText('${escJs(res.user.access_key)}')">复制</button></span></div>
+            <div class="kv-row"><span class="kv-key">Secret Key</span><span class="kv-val"><span>${esc(res.user.secret_key)}</span><button class="btn-link" onclick="copyText('${escJs(res.user.secret_key)}')">复制</button></span></div>
+          </div>`,
+          `<button class="btn orange" onclick="closeModal()">开始使用</button>`);
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    document.getElementById("logout-btn").onclick = async () => {
+      await fetch("/api/console/logout", { method: "POST" });
+      showLogin();
+    };
+
+    function switchTab(tab) {
+      document.querySelectorAll("aside .side-item[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.add("hidden"));
+      document.getElementById(`tab-${tab}`).classList.remove("hidden");
+    }
+    document.querySelectorAll("aside .side-item[data-tab]").forEach(btn => { btn.onclick = () => switchTab(btn.dataset.tab); });
+
+    async function loadAll() {
+      const [me, bks, reqs] = await Promise.all([
+        api("/api/console/me"),
+        api("/api/console/buckets"),
+        api("/api/console/bucket-requests"),
+      ]);
+      state.me = me;
+      state.buckets = bks.buckets;
+      state.requests = reqs.requests;
+      document.getElementById("header-region").textContent = me.region || "us-east-1";
+      document.getElementById("user-badge").textContent = `用户: ${me.user.username}`;
+      const pendingBadge = document.getElementById("sidebar-req-badge");
+      if (me.pending_requests_count > 0) {
+        pendingBadge.textContent = me.pending_requests_count;
+        pendingBadge.classList.remove("hidden");
+      } else {
+        pendingBadge.classList.add("hidden");
+      }
+      renderUserOverview();
+      renderRequests();
+      renderSidebarBuckets();
+    }
+
+    function renderUserOverview() {
+      const u = state.me.user;
+      const quota = Number(u.effective_quota_bytes || u.quota_bytes || 0);
+      const qBar = document.getElementById("user-quota-banner");
+      if (!u.has_storage_pool) {
+        qBar.className = "alert-banner";
+        qBar.innerHTML = `
+          <div>
+            <div style="font-weight:600;margin-bottom:2px">您的存储资源尚未开通</div>
+            <div style="font-size:12px">请提交一个 Bucket 开通申请，管理员审核通过后即可创建 Bucket 并上传文件。</div>
+          </div>
+          <button class="btn orange sm" onclick="openApplyBucketDrawer()">立即申请 Bucket</button>`;
+      } else {
+        qBar.className = "hidden";
+        qBar.innerHTML = "";
+      }
+
+      const cards = [
+        ["blue", "当前账号", u.username, u.has_storage_pool ? "账号状态: 已开通可用" : "账号状态: 待开通资源", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`],
+        ["purple", "我的 Buckets", state.buckets.length, `待审批申请: ${state.me.pending_requests_count}`, `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`],
+        ["green", "已用存储空间", fmtBytes(u.used_bytes), quota > 0 ? `总配额 ${fmtBytes(quota)}` : (u.has_storage_pool ? "可用配额: 无额外限制" : "尚未开通配额"), `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`],
+        ["orange", "数据安全等级", u.encryption_enabled ? "AES-256-GCM" : "标准存储", "S3 协议兼容 + 签名分享", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`],
+      ];
+      document.getElementById("stats-grid").innerHTML = cards.map(([cls, label, val, sub, svg]) => `
+        <div class="kpi-card"><div class="kpi-icon ${cls}">${svg}</div><div style="min-width:0"><div class="kpi-label">${esc(label)}</div><div class="kpi-val num">${esc(val)}</div><div class="kpi-sub">${esc(sub)}</div></div></div>
+      `).join("");
+
+      const bRows = state.buckets.map(b => `
+        <tr>
+          <td class="mono"><strong>${esc(b.name)}</strong></td>
+          <td><span class="badge ${b.acl === "public-read" ? "warn" : "ok"}">${b.acl === "public-read" ? "公共读" : "私有"}</span></td>
+          <td>${fmtTime(b.created_at)}</td>
+          <td><button class="btn-link" onclick="selectBucket('${escJs(b.name)}')">进入管理</button></td>
+        </tr>`).join("");
+
+      const rcloneSnippet = `[banoss]\ntype = s3\nprovider = Other\naccess_key_id = ${u.access_key}\nsecret_access_key = <点击右侧查看 Secret Key>\nendpoint = ${location.origin}\nforce_path_style = true\nchunk_size = 32M`;
+      document.getElementById("overview-extra").innerHTML = `
+        <div class="overview-split">
+          <div class="card" style="margin-bottom:0;padding:0;overflow:hidden">
+            <div class="card-header" style="padding:14px 18px;margin-bottom:0">
+              <h3 class="card-title">我的存储空间 (Buckets)</h3>
+              <button class="btn-link" onclick="handleCreateOrApplyBucket()">+ 新建 / 申请</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table><thead><tr><th>Bucket 名称</th><th>读写权限</th><th>创建时间</th><th>操作</th></tr></thead>
+              <tbody>${bRows || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">暂无 Bucket，点击右上角创建或申请开通</td></tr>'}</tbody></table>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header">
+              <h3 class="card-title">S3 客户端与 SDK 接入</h3>
+              <button class="btn sec sm" onclick="revealMySecret()">查看 Secret Key</button>
+            </div>
+            <div class="kv-list" style="margin-bottom:12px">
+              <div class="kv-row"><span class="kv-key">Endpoint</span><span class="kv-val"><span class="truncate">${esc(location.origin)}</span><button class="btn-link" onclick="copyText('${escJs(location.origin)}')">复制</button></span></div>
+              <div class="kv-row"><span class="kv-key">Access Key</span><span class="kv-val"><span>${esc(u.access_key)}</span><button class="btn-link" onclick="copyText('${escJs(u.access_key)}')">复制</button></span></div>
+            </div>
+            <pre id="my-rclone-pre">${esc(rcloneSnippet)}</pre>
+          </div>
+        </div>`;
+    }
+
+    async function revealMySecret() {
+      try {
+        const res = await api("/api/console/reveal-secret", { method: "POST" });
+        const fullCfg = `[banoss]\ntype = s3\nprovider = Other\naccess_key_id = ${res.access_key}\nsecret_access_key = ${res.secret_key}\nendpoint = ${location.origin}\nforce_path_style = true\nchunk_size = 32M`;
+        openModal("我的 S3 接入凭据", `
+          <div class="kv-list" style="margin-bottom:14px">
+            <div class="kv-row"><span class="kv-key">Access Key</span><span class="kv-val"><span>${esc(res.access_key)}</span><button class="btn-link" onclick="copyText('${escJs(res.access_key)}')">复制</button></span></div>
+            <div class="kv-row"><span class="kv-key">Secret Key</span><span class="kv-val"><span>${esc(res.secret_key)}</span><button class="btn-link" onclick="copyText('${escJs(res.secret_key)}')">复制</button></span></div>
+          </div>
+          <label style="display:flex;justify-content:space-between"><span>rclone.conf 完整配置</span><button class="btn-link" onclick="copyText(document.getElementById('modal-rclone').textContent)">复制配置</button></label>
+          <pre id="modal-rclone">${esc(fullCfg)}</pre>`,
+          `<button class="btn orange" onclick="closeModal()">关闭</button>`);
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function renderRequests() {
+      const tb = document.getElementById("requests-tbody");
+      tb.innerHTML = (state.requests || []).map(r => {
+        const stMap = { pending: ["warn", "待审批"], approved: ["ok", "已通过"], rejected: ["err", "已驳回"] };
+        const [stCls, stTxt] = stMap[r.status] || ["", r.status];
+        return `<tr>
+          <td class="mono"><strong>${esc(r.bucket_name)}</strong></td>
+          <td><span class="badge ${r.acl === "public-read" ? "warn" : "ok"}">${r.acl === "public-read" ? "公共读" : "私有"}</span></td>
+          <td class="num">${r.requested_quota_bytes > 0 ? fmtBytes(r.requested_quota_bytes) : "默认"}</td>
+          <td style="max-width:220px">${esc(r.reason || "-")}</td>
+          <td><span class="badge ${stCls}">${stTxt}</span></td>
+          <td style="color:var(--text-muted)">${esc(r.admin_note || "-")}</td>
+          <td>${fmtTime(r.created_at)}</td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text-muted)">暂无申请记录</td></tr>`;
+    }
+
+    function handleCreateOrApplyBucket() {
+      if (state.me?.user?.has_storage_pool) openCreateBucketModal();
+      else openApplyBucketDrawer();
+    }
+
+    function openApplyBucketDrawer() {
+      openDrawer("申请开通存储空间 (Bucket)", `
+        <p style="margin:0 0 14px;color:var(--text-muted);font-size:12.5px">提交申请后，管理员将为您分配容量并自动创建该 Bucket。</p>
+        <div class="form-row"><label>期望 Bucket 名称 (3~63位小写字母、数字、点或短横线)</label><input id="req-bname" placeholder="例如 my-project-assets" /></div>
+        <div class="form-grid">
+          <div class="form-row"><label>访问权限 (ACL)</label>
+            <div class="seg-group" id="req-acl-seg" data-val="private">
+              <button type="button" class="seg-btn active" onclick="pickSeg('req-acl-seg','private',this)">私有 Private</button>
+              <button type="button" class="seg-btn" onclick="pickSeg('req-acl-seg','public-read',this)">公共读 Public</button>
+            </div>
+          </div>
+          <div class="form-row"><label>期望存储容量 (GiB)</label><input id="req-quota-gib" type="number" value="20" min="1" /></div>
+        </div>
+        <div class="form-row"><label>申请用途与说明</label><textarea id="req-reason" placeholder="请简述数据用途或预计使用周期，便于管理员快速审批"></textarea></div>`,
+        `<button type="button" class="btn sec" onclick="closeDrawer()">取消</button>
+         <button type="button" class="btn orange" onclick="submitBucketRequest()">提交申请</button>`);
+    }
+
+    async function submitBucketRequest() {
+      const bucket_name = document.getElementById("req-bname").value.trim().toLowerCase();
+      const acl = document.getElementById("req-acl-seg").dataset.val;
+      const quotaGiB = Number(document.getElementById("req-quota-gib").value || 0);
+      const reason = document.getElementById("req-reason").value.trim();
+      if (!bucket_name) { toast("请输入 Bucket 名称", "err"); return; }
+      try {
+        await api("/api/console/bucket-requests", {
+          method: "POST",
+          body: JSON.stringify({
+            bucket_name,
+            acl,
+            requested_quota_bytes: Math.round(quotaGiB * (1024 ** 3)),
+            reason,
+          }),
+        });
+        closeDrawer();
+        toast("申请已提交，请等待管理员审批开通", "ok");
+        await loadAll();
+        switchTab("requests");
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function openCreateBucketModal() {
+      openModal("创建 Bucket", `
+        <div class="form-row"><label>Bucket 名称 (3~63位小写字母、数字、点或短横线)</label><input id="m-bname" placeholder="例如 my-media-assets" /></div>
+        <div class="form-row"><label>初始读写权限 (ACL)</label>
+          <div class="seg-group" id="m-acl-seg" data-val="private">
+            <button type="button" class="seg-btn active" onclick="pickSeg('m-acl-seg','private',this)">私有 Private</button>
+            <button type="button" class="seg-btn" onclick="pickSeg('m-acl-seg','public-read',this)">公共读 Public Read</button>
+          </div>
+        </div>`,
+        `<button class="btn sec" onclick="closeModal()">取消</button><button class="btn orange" onclick="submitCreateBucket()">创建 Bucket</button>`);
+    }
+
+    async function submitCreateBucket() {
+      const name = document.getElementById("m-bname").value.trim().toLowerCase();
+      const acl = document.getElementById("m-acl-seg").dataset.val;
+      if (!name) { toast("请输入 Bucket 名称", "err"); return; }
+      try {
+        await api("/api/console/buckets", { method: "POST", body: JSON.stringify({ name, acl }) });
+        closeModal();
+        state.currentBucket = name;
+        state.currentPrefix = "";
+        toast(`Bucket ${name} 创建成功`, "ok");
+        await loadAll();
+        switchTab("oss");
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function renderSidebarBuckets() {
+      const box = document.getElementById("sidebar-buckets");
+      document.getElementById("sidebar-bucket-count").textContent = String(state.buckets.length);
+      if (!state.buckets.length) {
+        box.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--text-light)">暂无 Bucket</div>`;
+        state.currentBucket = "";
+        document.getElementById("oss-empty").classList.remove("hidden");
+        document.getElementById("oss-workspace").classList.add("hidden");
+        document.getElementById("oss-empty-hint").textContent = state.me?.user?.has_storage_pool
+          ? "创建一个 Bucket 来管理文件、开启公共读外链或配置 CORS 跨域访问。"
+          : "当前账号尚未开通存储资源，点击下方按钮提交首个 Bucket 开通申请。";
+        return;
+      }
+      if (!state.currentBucket || !state.buckets.some(b => b.name === state.currentBucket)) {
+        state.currentBucket = state.buckets[0].name;
+        state.currentPrefix = "";
+      }
+      const q = (document.getElementById("sidebar-bucket-filter")?.value || "").trim().toLowerCase();
+      const filtered = state.buckets.filter(b => !q || b.name.toLowerCase().includes(q));
+      box.innerHTML = filtered.map(b => `
+        <div class="bucket-item ${b.name === state.currentBucket ? "active" : ""}" onclick="selectBucket('${escJs(b.name)}')">
+          <span class="bucket-name-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <span class="truncate">${esc(b.name)}</span>
+          </span>
+          <span class="badge ${b.acl === "public-read" ? "warn" : ""}" style="font-size:10px;padding:1px 5px">${b.acl === "public-read" ? "公共" : "私有"}</span>
+        </div>`).join("") || `<div style="padding:10px 12px;font-size:12px;color:var(--text-light)">无匹配</div>`;
+      renderBucketHeader();
+    }
+
+    function selectBucket(name) {
+      state.currentBucket = name;
+      state.currentPrefix = "";
+      switchTab("oss");
+      renderSidebarBuckets();
+      refreshFiles();
+    }
+
+    function renderBucketHeader() {
+      const b = state.buckets.find(x => x.name === state.currentBucket);
+      if (!b) return;
+      document.getElementById("oss-empty").classList.add("hidden");
+      document.getElementById("oss-workspace").classList.remove("hidden");
+      document.getElementById("oss-bucket-title").textContent = b.name;
+      const badge = document.getElementById("oss-bucket-acl-badge");
+      badge.textContent = b.acl === "public-read" ? "公共读" : "私有";
+      badge.className = "badge " + (b.acl === "public-read" ? "warn" : "ok");
+      document.getElementById("oss-bucket-meta").innerHTML = `
+        <span>访问域名: <span class="mono">${esc(location.origin)}/${esc(b.name)}/</span></span>
+        <span>创建时间: ${fmtTime(b.created_at)}</span>`;
+      state.inlineAcl = b.acl || "private";
+      document.getElementById("acl-opt-private").classList.toggle("active", state.inlineAcl === "private");
+      document.getElementById("acl-opt-public").classList.toggle("active", state.inlineAcl === "public-read");
+      document.getElementById("inline-cors-json").value = JSON.stringify(b.cors_rules || [], null, 2);
+      if (state.buckets.length && !document.getElementById("tab-oss").classList.contains("hidden") && !state._filesLoadedForBucket?.[b.name]) {
+        refreshFiles();
+      }
+    }
+
+    function switchOssSubtab(sub) {
+      document.querySelectorAll(".sub-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.subtab === sub));
+      document.getElementById("subtab-files").classList.toggle("hidden", sub !== "files");
+      document.getElementById("subtab-access").classList.toggle("hidden", sub !== "access");
+    }
+
+    function pickInlineAcl(acl) {
+      state.inlineAcl = acl;
+      document.getElementById("acl-opt-private").classList.toggle("active", acl === "private");
+      document.getElementById("acl-opt-public").classList.toggle("active", acl === "public-read");
+    }
+    async function saveInlineAcl() {
+      if (!state.currentBucket) return;
+      try {
+        await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}`, { method: "PATCH", body: JSON.stringify({ acl: state.inlineAcl }) });
+        toast("Bucket 权限 (ACL) 已更新", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+    function presetInlineCors() {
+      document.getElementById("inline-cors-json").value = JSON.stringify([{
+        allowed_origins: ["*"], allowed_methods: ["GET", "HEAD", "PUT", "POST", "DELETE"],
+        allowed_headers: ["*"], expose_headers: ["ETag"], max_age_seconds: 3600,
+      }], null, 2);
+    }
+    async function saveInlineCors() {
+      if (!state.currentBucket) return;
+      try {
+        const cors_rules = JSON.parse(document.getElementById("inline-cors-json").value || "[]");
+        await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}`, { method: "PATCH", body: JSON.stringify({ cors_rules }) });
+        toast("CORS 规则已更新", "ok");
+        await loadAll();
+      } catch (e) { toast("JSON 格式错误或保存失败: " + e.message, "err"); }
+    }
+
+    async function deleteCurrentBucket() {
+      if (!state.currentBucket || !confirm(`确定删除空 Bucket「${state.currentBucket}」？`)) return;
+      try {
+        await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}`, { method: "DELETE" });
+        toast("Bucket 已删除", "ok");
+        state.currentBucket = "";
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      document.getElementById("view-list-btn").classList.toggle("active", mode === "list");
+      document.getElementById("view-grid-btn").classList.toggle("active", mode === "grid");
+      document.getElementById("files-list-wrap").classList.toggle("hidden", mode !== "list");
+      document.getElementById("files-grid-wrap").classList.toggle("hidden", mode !== "grid");
+      renderFiles();
+    }
+
+    async function refreshFiles() {
+      if (!state.currentBucket) return;
+      state._filesLoadedForBucket = { [state.currentBucket]: true };
+      try {
+        const data = await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects?prefix=${encodeURIComponent(state.currentPrefix)}&delimiter=/&max_keys=500`);
+        state.folders = data.common_prefixes || [];
+        state.files = (data.objects || []).filter(o => o.key !== state.currentPrefix);
+        state.selectedFolders.clear();
+        state.selectedKeys.clear();
+        renderCrumb();
+        renderFiles();
+        updateBatchDeleteBtn();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function renderCrumb() {
+      const box = document.getElementById("oss-crumb");
+      const parts = state.currentPrefix.split("/").filter(Boolean);
+      let html = `<button onclick="enterPrefix('')">${esc(state.currentBucket)} /</button>`;
+      let acc = "";
+      for (const p of parts) {
+        acc += p + "/";
+        const t = acc;
+        html += `<span style="color:#d1d5db">/</span><button onclick="enterPrefix('${escJs(t)}')">${esc(p)}</button>`;
+      }
+      box.innerHTML = html;
+    }
+    function enterPrefix(p) { state.currentPrefix = p; refreshFiles(); }
+
+    function renderFiles() {
+      const q = (document.getElementById("file-filter")?.value || "").trim().toLowerCase();
+      const folders = state.folders.filter(f => !q || f.toLowerCase().includes(q));
+      const files = state.files.filter(o => !q || o.key.toLowerCase().includes(q));
+
+      if (state.viewMode === "grid") {
+        const grid = document.getElementById("files-grid-wrap");
+        const fCards = folders.map(pf => {
+          const name = pf.slice(state.currentPrefix.length).replace(/\/$/, "");
+          return `<div class="gal-card" onclick="enterPrefix('${escJs(pf)}')">
+            <div class="gal-thumb"><svg width="38" height="38" viewBox="0 0 24 24" fill="#fef3c7" stroke="#d97706" stroke-width="1.6"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="gal-meta"><div class="gal-name truncate">${esc(name)}/</div><div class="gal-sub"><span>目录</span></div></div>
+          </div>`;
+        });
+        const oCards = files.map((o) => {
+          const origIdx = state.files.indexOf(o);
+          const name = o.key.slice(state.currentPrefix.length) || o.key;
+          const isImg = o.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name);
+          const thumbUrl = `/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(o.key)}&inline=1`;
+          return `<div class="gal-card" onclick="openObjectDrawer(${origIdx})">
+            <div class="gal-thumb">${isImg ? `<img src="${thumbUrl}" loading="lazy" />` : `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`}</div>
+            <div class="gal-meta"><div class="gal-name truncate" title="${esc(name)}">${esc(name)}</div><div class="gal-sub"><span>${fmtBytes(o.size)}</span><span>${esc(o.content_type.split("/").pop())}</span></div></div>
+          </div>`;
+        });
+        grid.innerHTML = [...fCards, ...oCards].join("") || `<div style="grid-column:1/-1;text-align:center;padding:44px;color:var(--text-muted)">当前目录为空</div>`;
+        return;
+      }
+
+      const tb = document.getElementById("files-tbody");
+      const rows = [];
+      for (const pf of folders) {
+        const name = pf.slice(state.currentPrefix.length).replace(/\/$/, "");
+        rows.push(`<tr>
+          <td><input type="checkbox" ${state.selectedFolders.has(pf) ? "checked" : ""} onchange="toggleSelect('folder','${escJs(pf)}',this.checked)" /></td>
+          <td><div class="obj-cell"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fef3c7" stroke="#d97706" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><button class="btn-link mono" style="font-size:13px" onclick="enterPrefix('${escJs(pf)}')">${esc(name)}/</button></div></td>
+          <td><span class="badge">目录</span></td><td>-</td><td>-</td>
+          <td><button class="btn-link" onclick="enterPrefix('${escJs(pf)}')">打开</button><span class="action-sep">|</span><button class="btn-link danger" onclick="deleteFolder('${escJs(pf)}')">删除</button></td>
+        </tr>`);
+      }
+      for (const o of files) {
+        const origIdx = state.files.indexOf(o);
+        const name = o.key.slice(state.currentPrefix.length) || o.key;
+        const dlUrl = `/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(o.key)}`;
+        rows.push(`<tr>
+          <td><input type="checkbox" ${state.selectedKeys.has(o.key) ? "checked" : ""} onchange="toggleSelect('file','${escJs(o.key)}',this.checked)" /></td>
+          <td><div class="obj-cell"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><button class="btn-link mono" style="color:var(--text);font-weight:500" onclick="openObjectDrawer(${origIdx})">${esc(name)}</button></div></td>
+          <td class="num">${fmtBytes(o.size)}</td>
+          <td class="truncate" style="max-width:150px;color:var(--text-muted)">${esc(o.content_type)}</td>
+          <td style="color:var(--text-muted)">${fmtTime(o.updated_at)}</td>
+          <td><div style="display:flex;align-items:center;gap:4px">
+            <button class="btn-link" onclick="openObjectDrawer(${origIdx})">详情 / 分享</button><span class="action-sep">|</span>
+            <a class="btn-link" href="${dlUrl}">下载</a><span class="action-sep">|</span>
+            <button class="btn-link danger" onclick="deleteOneObject('${escJs(o.key)}')">删除</button>
+          </div></td>
+        </tr>`);
+      }
+      tb.innerHTML = rows.join("") || `<tr><td colspan="6" style="text-align:center;padding:42px;color:var(--text-muted)">当前目录暂无文件，点击上方「上传文件」即可拖拽上传</td></tr>`;
+    }
+
+    function toggleSelect(kind, val, chk) {
+      const set = kind === "folder" ? state.selectedFolders : state.selectedKeys;
+      if (chk) set.add(val); else set.delete(val);
+      updateBatchDeleteBtn();
+    }
+    function toggleSelectAll(chk) {
+      state.selectedFolders.clear(); state.selectedKeys.clear();
+      if (chk) { state.folders.forEach(f => state.selectedFolders.add(f)); state.files.forEach(o => state.selectedKeys.add(o.key)); }
+      renderFiles(); updateBatchDeleteBtn();
+    }
+    function updateBatchDeleteBtn() {
+      const total = state.selectedFolders.size + state.selectedKeys.size;
+      document.getElementById("sel-count").textContent = total;
+      document.getElementById("btn-batch-del").classList.toggle("hidden", total === 0);
+    }
+
+    // ---- Drawers & Modals (Anti-Accidental-Close) ----
+    let _drawerAllowBackdrop = false;
+    let _downOnDrawerBg = false;
+    let _downOnModalBg = false;
+
+    (() => {
+      const dbg = document.getElementById("drawer-bg");
+      dbg.addEventListener("mousedown", e => { _downOnDrawerBg = (e.target === dbg); });
+      dbg.addEventListener("click", e => {
+        if (_drawerAllowBackdrop && _downOnDrawerBg && e.target === dbg) closeDrawer();
+        _downOnDrawerBg = false;
+      });
+      dbg.addEventListener("dragover", e => e.preventDefault());
+      dbg.addEventListener("drop", e => {
+        if (!e.target.closest(".dropzone")) e.preventDefault();
+      });
+
+      const mbg = document.getElementById("modal-bg");
+      mbg.addEventListener("mousedown", e => { _downOnModalBg = (e.target === mbg); });
+      mbg.addEventListener("click", e => {
+        if (_downOnModalBg && e.target === mbg) closeModal();
+        _downOnModalBg = false;
+      });
+    })();
+
+    function openDrawer(title, bodyHtml, footHtml, opts = {}) {
+      const cfg = typeof opts === "boolean" ? { wide: opts } : (opts || {});
+      _drawerAllowBackdrop = Boolean(cfg.closeOnBackdrop);
+      const panel = document.getElementById("drawer-panel");
+      panel.classList.toggle("wide", Boolean(cfg.wide));
+      document.getElementById("drawer-title").textContent = title;
+      document.getElementById("drawer-body").innerHTML = bodyHtml;
+      document.getElementById("drawer-foot").innerHTML = footHtml;
+      document.getElementById("drawer-bg").classList.remove("hidden");
+    }
+    function closeDrawer() { document.getElementById("drawer-bg").classList.add("hidden"); }
+
+    function openModal(title, bodyHtml, footHtml) {
+      document.getElementById("modal-panel").innerHTML = `
+        <div class="modal-head"><h3>${title}</h3><button class="close-x" onclick="closeModal()">&times;</button></div>
+        <div class="modal-body-pad">${bodyHtml}</div>
+        <div class="modal-foot">${footHtml}</div>`;
+      document.getElementById("modal-bg").classList.remove("hidden");
+    }
+    function closeModal() { document.getElementById("modal-bg").classList.add("hidden"); }
+
+    // ---- Object Details Drawer (Strictly Opaque - No backend node or remote path info) ----
+    async function openObjectDrawer(idx) {
+      const o = state.files[idx];
+      if (!o) return;
+      const key = o.key;
+      const dlUrl = `/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(key)}`;
+      const inlineUrl = `${dlUrl}&inline=1`;
+
+      openDrawer(`文件详情 · ${key.split("/").pop()}`, `<p style="color:var(--text-muted)">加载中...</p>`,
+        `<a class="btn sec" href="${dlUrl}">下载原文件</a><button class="btn" onclick="closeDrawer()">关闭</button>`,
+        { wide: true, closeOnBackdrop: true });
+
+      const [info, share] = await Promise.all([
+        api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects/inspect?key=${encodeURIComponent(key)}`),
+        api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/presign`, { method: "POST", body: JSON.stringify({ key, expires_seconds: 3600 }) }),
+      ]);
+
+      let previewHtml = `<div style="padding:18px;text-align:center;background:#f9fafb;border-radius:6px;color:var(--text-muted)">暂不支持在线预览 (${esc(o.content_type)})</div>`;
+      if (o.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(key)) {
+        previewHtml = `<div style="padding:10px;text-align:center;background:#f8fafc;border:1px solid var(--border);border-radius:6px"><img src="${inlineUrl}" style="max-width:100%;max-height:280px;border-radius:4px" /></div>`;
+      } else if (o.content_type.startsWith("video/")) {
+        previewHtml = `<video src="${inlineUrl}" controls style="width:100%;max-height:280px;border-radius:6px;background:#000"></video>`;
+      } else if (o.content_type.startsWith("audio/")) {
+        previewHtml = `<audio src="${inlineUrl}" controls style="width:100%"></audio>`;
+      } else if (o.content_type === "application/pdf") {
+        previewHtml = `<iframe src="${inlineUrl}" style="width:100%;height:320px;border:1px solid var(--border);border-radius:6px"></iframe>`;
+      } else if (o.content_type.startsWith("text/") || o.content_type.includes("json") || o.content_type.includes("xml") || /\.(txt|md|py|js|ts|json|yaml|yml|csv|log|sh|toml)$/i.test(key)) {
+        const res = await fetch(inlineUrl);
+        const txt = await res.text();
+        previewHtml = `<pre style="max-height:240px">${esc(txt.slice(0, 120000))}</pre>`;
+      }
+
+      document.getElementById("drawer-body").innerHTML = `
+        <div class="form-section-title" style="margin-top:0"><span>在线预览</span><span class="badge blue">${esc(o.content_type)}</span></div>
+        <div style="margin-bottom:18px">${previewHtml}</div>
+
+        <div class="form-section-title"><span>对象元数据</span><button class="btn-link" onclick="copyText('${escJs("s3://" + state.currentBucket + "/" + key)}')">复制 S3 URI</button></div>
+        <div class="kv-list" style="margin-bottom:18px">
+          <div class="kv-row"><span class="kv-key">对象 Key</span><span class="kv-val"><span class="truncate">${esc(key)}</span><button class="btn-link" onclick="openRenameModal(${idx})">重命名</button></span></div>
+          <div class="kv-row"><span class="kv-key">文件大小 / ETag</span><span class="kv-val">${fmtBytes(info.object.size)} · ${esc(info.object.etag)}</span></div>
+          <div class="kv-row"><span class="kv-key">存储保护</span><span class="kv-val"><span class="badge ${info.encrypted ? "ok" : ""}">${info.encrypted ? "AES-256-GCM 已加密" : "标准存储"}</span></span></div>
+          <div class="kv-row"><span class="kv-key">最后修改时间</span><span class="kv-val">${fmtTime(info.object.updated_at)}</span></div>
+        </div>
+
+        <div class="form-section-title"><span>外链分享 (SigV4 预签名)</span></div>
+        <div class="seg-group" style="margin-bottom:10px" id="share-ttl-seg">
+          <button type="button" class="seg-btn" onclick="refreshDrawerShare(${idx}, 900, this)">15 分钟</button>
+          <button type="button" class="seg-btn active" onclick="refreshDrawerShare(${idx}, 3600, this)">1 小时</button>
+          <button type="button" class="seg-btn" onclick="refreshDrawerShare(${idx}, 86400, this)">24 小时</button>
+          <button type="button" class="seg-btn" onclick="refreshDrawerShare(${idx}, 604800, this)">7 天</button>
+        </div>
+        <div id="drawer-share-box">${_renderShareBox(share)}</div>`;
+    }
+
+    function _renderShareBox(data) {
+      let html = `
+        <div style="margin-bottom:10px">
+          <label style="display:flex;justify-content:space-between"><span>预签名临时直链</span><button class="btn-link" onclick="copyText(document.getElementById('d-pre-url').textContent)">复制链接</button></label>
+          <pre id="d-pre-url">${esc(data.presigned_url)}</pre>
+        </div>`;
+      if (data.public_url) {
+        html += `
+          <div>
+            <label style="display:flex;justify-content:space-between"><span>公共读永久直链 (Public Read)</span><button class="btn-link" onclick="copyText(document.getElementById('d-pub-url').textContent)">复制永久直链</button></label>
+            <pre id="d-pub-url">${esc(data.public_url)}</pre>
+          </div>`;
+      }
+      return html;
+    }
+
+    async function refreshDrawerShare(idx, ttl, btnEl) {
+      const o = state.files[idx];
+      if (!o) return;
+      document.querySelectorAll("#share-ttl-seg .seg-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      const data = await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/presign`, {
+        method: "POST", body: JSON.stringify({ key: o.key, expires_seconds: ttl }),
+      });
+      document.getElementById("drawer-share-box").innerHTML = _renderShareBox(data);
+    }
+
+    function openRenameModal(idx) {
+      const o = state.files[idx];
+      if (!o) return;
+      openModal("重命名 / 移动对象", `
+        <div class="form-row"><label>新对象路径 (Key)</label><input id="m-new-key" value="${esc(o.key)}" /></div>`,
+        `<button class="btn sec" onclick="closeModal()">取消</button><button class="btn orange" onclick="submitRename('${escJs(o.key)}')">确认重命名</button>`);
+    }
+    async function submitRename(oldKey) {
+      const newKey = document.getElementById("m-new-key").value.trim().replace(/^\/+/, "");
+      if (!newKey || newKey === oldKey) { closeModal(); return; }
+      try {
+        await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects/rename`, {
+          method: "POST", body: JSON.stringify({ old_key: oldKey, new_key: newKey }),
+        });
+        toast("重命名完成", "ok");
+        closeModal();
+        closeDrawer();
+        await refreshFiles();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function openFolderModal() {
+      openModal("新建目录", `
+        <div class="form-row"><label>目录名（将在当前前缀 <span class="mono">${esc(state.currentPrefix || "/")}</span> 下创建）</label><input id="m-folder" placeholder="例如 datasets/2026" /></div>`,
+        `<button class="btn sec" onclick="closeModal()">取消</button><button class="btn" onclick="submitFolder()">创建目录</button>`);
+    }
+    async function submitFolder() {
+      const name = document.getElementById("m-folder").value.trim().replace(/^\/+|\/+$/g, "");
+      if (!name) return;
+      try {
+        await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/folders`, {
+          method: "POST", body: JSON.stringify({ folder: state.currentPrefix + name }),
+        });
+        closeModal();
+        toast("目录已创建", "ok");
+        await refreshFiles();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    async function deleteOneObject(key) {
+      if (!confirm(`确定删除文件 ${key}？`)) return;
+      try {
+        await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/objects?key=${encodeURIComponent(key)}`, { method: "DELETE" });
+        toast("文件已删除", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+    async function deleteFolder(pf) {
+      if (!confirm(`确定递归删除目录 ${pf} 及其内部全部文件？`)) return;
+      const res = await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/delete-batch`, {
+        method: "POST", body: JSON.stringify({ keys: [], prefixes: [pf] }),
+      });
+      toast(`已清理 ${res.deleted} 个对象`, "ok");
+      await loadAll();
+    }
+    async function deleteSelectedObjects() {
+      const keys = [...state.selectedKeys], prefixes = [...state.selectedFolders];
+      if (!keys.length && !prefixes.length) return;
+      if (!confirm(`确定删除选中的 ${keys.length} 个文件和 ${prefixes.length} 个目录？`)) return;
+      const res = await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/delete-batch`, {
+        method: "POST", body: JSON.stringify({ keys, prefixes }),
+      });
+      toast(`批量删除 ${res.deleted} 项成功`, "ok");
+      await loadAll();
+    }
+
+    function openUploadDrawer() {
+      if (!state.currentBucket) return;
+      openDrawer(`上传文件到 ${state.currentBucket}/${state.currentPrefix}`, `
+        <div id="dropzone" class="dropzone">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1677ff" stroke-width="1.6" style="margin-bottom:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="font-weight:500">将文件拖拽到此处，或使用下方按钮选择文件 / 整个文件夹</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">大文件自动切片高速直传，支持任意中文名与嵌套目录</div>
+          <div class="actions" style="justify-content:center;margin-top:14px">
+            <button type="button" class="btn sm" onclick="document.getElementById('pick-files').click()">选择文件 (可多选)</button>
+            <button type="button" class="btn sec sm" onclick="document.getElementById('pick-dir').click()">选择文件夹</button>
+          </div>
+          <input id="pick-files" type="file" multiple class="hidden" />
+          <input id="pick-dir" type="file" webkitdirectory multiple class="hidden" />
+        </div>
+        <div id="up-progress" style="margin-top:12px"></div>`,
+        `<span style="font-size:12px;color:var(--text-muted)">大文件自动分片加密合并</span><button class="btn" onclick="closeDrawer()">完成</button>`);
+      const dz = document.getElementById("dropzone");
+      dz.ondragover = e => { e.preventDefault(); dz.classList.add("dragover"); };
+      dz.ondragleave = () => dz.classList.remove("dragover");
+      dz.ondrop = e => { e.preventDefault(); dz.classList.remove("dragover"); uploadFileList(e.dataTransfer.files); };
+      document.getElementById("pick-files").onchange = e => { uploadFileList(e.target.files); e.target.value = ""; };
+      document.getElementById("pick-dir").onchange = e => { uploadFileList(e.target.files); e.target.value = ""; };
+    }
+
+    async function uploadFileList(files) {
+      if (!files || !files.length || !state.currentBucket) return;
+      const box = document.getElementById("up-progress");
+      for (const file of files) {
+        const rel = (file.webkitRelativePath || file.name).replace(/^\/+/, "");
+        const key = state.currentPrefix + rel;
+        const row = document.createElement("div");
+        row.className = "up-row";
+        row.innerHTML = `<span class="mono truncate" style="max-width:190px" title="${esc(key)}">${esc(rel)}</span><div class="up-track"><div></div></div><span class="num" style="font-size:12px;width:72px;text-align:right">0%</span>`;
+        box.appendChild(row);
+        const bar = row.querySelector(".up-track > div");
+        const pctEl = row.querySelectorAll("span")[1];
+
+        if (file.size <= MULTIPART_THRESHOLD) {
+          await new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `/api/console/buckets/${encodeURIComponent(state.currentBucket)}/upload?key=${encodeURIComponent(key)}`);
+            xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+            xhr.upload.onprogress = ev => {
+              if (ev.lengthComputable) {
+                const p = Math.round((ev.loaded * 100) / ev.total);
+                bar.style.width = p + "%";
+                pctEl.textContent = p + "%";
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                bar.style.width = "100%"; bar.style.background = "var(--green)"; pctEl.textContent = "已完成";
+              } else {
+                bar.style.background = "var(--red)"; pctEl.textContent = "失败";
+                try { toast(JSON.parse(xhr.responseText).detail || "上传失败", "err"); } catch {}
+              }
+              resolve();
+            };
+            xhr.onerror = () => { bar.style.background = "var(--red)"; pctEl.textContent = "网络错误"; resolve(); };
+            xhr.send(file);
+          });
+        } else {
+          try {
+            const initRes = await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/multipart/init`, {
+              method: "POST", body: JSON.stringify({ key, content_type: file.type || "application/octet-stream", total_size: file.size }),
+            });
+            const uploadId = initRes.upload_id;
+            const totalParts = Math.ceil(file.size / PART_SIZE);
+            for (let pn = 1; pn <= totalParts; pn++) {
+              const start = (pn - 1) * PART_SIZE;
+              const slice = file.slice(start, Math.min(start + PART_SIZE, file.size));
+              await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", `/api/console/buckets/${encodeURIComponent(state.currentBucket)}/multipart/${uploadId}/part?part_number=${pn}`);
+                xhr.upload.onprogress = ev => {
+                  if (ev.lengthComputable) {
+                    const overall = Math.round(((start + ev.loaded) * 100) / file.size);
+                    bar.style.width = overall + "%";
+                    pctEl.textContent = `${pn}/${totalParts} · ${overall}%`;
+                  }
+                };
+                xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`分片 ${pn} 失败`));
+                xhr.onerror = () => reject(new Error(`分片 ${pn} 网络错误`));
+                xhr.send(slice);
+              });
+            }
+            pctEl.textContent = "合并中...";
+            await api(`/api/console/buckets/${encodeURIComponent(state.currentBucket)}/multipart/${uploadId}/complete`, { method: "POST" });
+            bar.style.width = "100%"; bar.style.background = "var(--green)"; pctEl.textContent = "已完成";
+          } catch (e) {
+            bar.style.background = "var(--red)"; pctEl.textContent = "失败"; toast(e.message, "err");
+          }
+        }
+      }
+      await loadAll();
+    }
+
+    (async () => {
+      try {
+        await loadAll();
+        showApp();
+      } catch {
+        showLogin();
+      }
+    })();
+  </script>
+</body>
+</html>

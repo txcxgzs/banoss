@@ -1,0 +1,2715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BanOSS 对象存储控制台</title>
+  <style>
+    :root {
+      --nav-bg: #181c23;
+      --nav-border: #282e39;
+      --brand: #ff6a00;
+      --brand-hover: #e55e00;
+      --primary: #1677ff;
+      --primary-hover: #0958d9;
+      --primary-soft: #eef5ff;
+      --canvas: #f3f5f8;
+      --surface: #ffffff;
+      --surface-2: #fafbfc;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --text: #111827;
+      --text-2: #374151;
+      --text-muted: #6b7280;
+      --text-light: #9ca3af;
+      --green: #00a870;
+      --green-bg: #e8f8f2;
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --radius: 8px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
+      --shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.18);
+      --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom slim scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    .hidden { display: none !important; }
+    .mono { font-family: var(--font-mono); font-size: 12px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Global Header */
+    .topbar {
+      height: 50px;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--nav-border);
+      color: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .logo-wrap { display: flex; align-items: center; gap: 9px; color: #fff; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .logo-divider { width: 1px; height: 16px; background: #374151; }
+    .product-name { font-size: 13px; color: #d1d5db; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .region-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+      color: #e5e7eb; padding: 2px 9px; border-radius: 5px; font-size: 11.5px;
+    }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.22); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .nav-chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 5px; font-size: 12px;
+      background: rgba(255,255,255,.07); color: #e5e7eb; border: 1px solid rgba(255,255,255,.12);
+    }
+    .nav-chip.admin { border-color: rgba(255,106,0,.45); color: #ffb380; background: rgba(255,106,0,.14); }
+    .nav-link {
+      display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px;
+      border-radius: 5px; font-size: 12px; font-weight: 500; color: #e5e7eb;
+      background: transparent; border: 1px solid #374151; text-decoration: none; cursor: pointer;
+      transition: all .15s; font-family: inherit;
+    }
+    .nav-link:hover { background: rgba(255,255,255,.08); border-color: #4b5563; color: #fff; }
+
+    /* Buttons */
+    button.btn, a.btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 34px; padding: 0 15px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      border: 1px solid transparent; cursor: pointer; text-decoration: none;
+      transition: all .15s ease; white-space: nowrap; font-family: inherit;
+      background: var(--primary); color: #fff;
+    }
+    button.btn:disabled { opacity: .45; cursor: not-allowed; }
+    button.btn:hover:not(:disabled), a.btn:hover { background: var(--primary-hover); }
+    button.btn.orange, a.btn.orange { background: var(--brand); color: #fff; }
+    button.btn.orange:hover:not(:disabled), a.btn.orange:hover { background: var(--brand-hover); }
+    button.btn.sec, a.btn.sec { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+    button.btn.sec:hover:not(:disabled), a.btn.sec:hover { border-color: var(--primary); color: var(--primary); background: #f8fbff; }
+    button.btn.danger, a.btn.danger { background: var(--surface); color: var(--red); border-color: #fecaca; }
+    button.btn.danger:hover:not(:disabled), a.btn.danger:hover { background: var(--red-bg); border-color: var(--red); }
+    button.btn.sm, a.btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+    button.btn-link, a.btn-link {
+      background: none; border: none; padding: 3px 6px; margin: 0; font-family: inherit;
+      font-size: 12px; font-weight: 500; color: var(--primary); cursor: pointer; text-decoration: none;
+      border-radius: 4px; transition: background .12s; display: inline-flex; align-items: center; gap: 4px;
+    }
+    button.btn-link:hover, a.btn-link:hover { background: var(--primary-soft); color: var(--primary-hover); }
+    button.btn-link.danger { color: var(--red); }
+    button.btn-link.danger:hover { background: var(--red-bg); }
+    .action-sep { color: #e5e7eb; font-size: 11px; user-select: none; }
+
+    /* Tags */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 5px;
+      font-size: 11px; font-weight: 500; background: #f3f4f6; color: var(--text-2); border: 1px solid #e5e7eb;
+    }
+    .badge.ok { background: var(--green-bg); color: var(--green); border-color: #b7ebd6; }
+    .badge.warn { background: var(--amber-bg); color: #b45309; border-color: #fde68a; }
+    .badge.err { background: var(--red-bg); color: var(--red); border-color: #fecaca; }
+    .badge.blue { background: var(--primary-soft); color: var(--primary); border-color: #bfdbfe; }
+    .badge.orange { background: #fff3eb; color: #d95300; border-color: #ffd6ba; }
+
+    /* Custom Select Component (Replaces ugly OS select) */
+    .cselect { position: relative; width: 100%; }
+    .cselect-btn {
+      width: 100%; min-height: 36px; padding: 5px 11px; background: var(--surface);
+      border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-family: inherit; font-size: 13px; color: var(--text); text-align: left;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .cselect-btn:hover { border-color: var(--primary); }
+    .cselect.open .cselect-btn { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22,119,255,.12); }
+    .cselect-arrow { color: var(--text-muted); transition: transform .15s; flex-shrink: 0; }
+    .cselect.open .cselect-arrow { transform: rotate(180deg); color: var(--primary); }
+    .cselect-menu {
+      position: absolute; left: 0; right: 0; top: calc(100% + 5px); z-index: 120;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: var(--shadow-md); padding: 5px; max-height: 250px; overflow-y: auto;
+      display: none;
+    }
+    .cselect.open .cselect-menu { display: block; }
+    .cselect-search {
+      width: 100%; height: 30px; margin-bottom: 5px; padding: 0 9px; font-size: 12px;
+      border: 1px solid var(--border); border-radius: 5px; background: #f9fafb;
+    }
+    .cselect-opt {
+      padding: 8px 10px; border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      transition: background .1s;
+    }
+    .cselect-opt:hover { background: #f3f7ff; }
+    .cselect-opt.active { background: var(--primary-soft); color: var(--primary); }
+    .cselect-opt-main { display: flex; flex-direction: column; min-width: 0; }
+    .cselect-opt-label { font-size: 13px; font-weight: 500; }
+    .cselect-opt-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+    /* Segmented Pill Controls (for binary / enum options) */
+    .seg-group {
+      display: flex; gap: 4px; background: #f3f4f6; padding: 4px; border-radius: 7px; border: 1px solid #e5e7eb;
+    }
+    .seg-btn {
+      flex: 1; height: 30px; border: none; background: transparent; border-radius: 5px;
+      font-family: inherit; font-size: 12.5px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .seg-btn:hover { color: var(--text); }
+    .seg-btn.active {
+      background: var(--surface); color: var(--primary); font-weight: 600;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+    }
+
+    /* View Toggle Buttons */
+    .view-toggle { display: inline-flex; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 2px; }
+    .view-toggle button {
+      border: none; background: transparent; height: 28px; padding: 0 10px; border-radius: 4px;
+      cursor: pointer; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-family: inherit;
+    }
+    .view-toggle button.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+
+    /* Login */
+    .login-shell {
+      min-height: calc(100vh - 50px);
+      display: flex; align-items: center; justify-content: center; padding: 32px 20px;
+      background: radial-gradient(circle at 15% 20%, rgba(255,106,0,.07), transparent 40%),
+                  radial-gradient(circle at 85% 80%, rgba(22,119,255,.07), transparent 42%), var(--canvas);
+    }
+    .login-card-wrap {
+      width: 100%; max-width: 900px; display: grid; grid-template-columns: 1.05fr 1fr;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; box-shadow: var(--shadow-md);
+    }
+    .login-hero {
+      background: linear-gradient(155deg, #1b1f27 0%, #10141b 100%);
+      color: #f9fafb; padding: 40px 34px; display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .login-hero::after {
+      content: ""; position: absolute; right: -60px; bottom: -60px; width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(255,106,0,.22), transparent 68%); pointer-events: none;
+    }
+    .login-hero h1 { margin: 18px 0 8px; font-size: 22px; font-weight: 600; }
+    .login-hero p { margin: 0 0 26px; color: #9ca3af; font-size: 13px; }
+    .hero-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 13px; }
+    .hero-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #d1d5db; }
+    .hero-icon {
+      width: 22px; height: 22px; border-radius: 5px; background: rgba(255,106,0,.15); color: var(--brand);
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+    }
+    .login-pane { padding: 40px 36px; display: flex; flex-direction: column; justify-content: center; }
+    .login-tabs { display: grid; grid-template-columns: 1fr 1fr; background: #f3f4f6; padding: 3px; border-radius: 7px; margin-bottom: 24px; }
+    .login-tab { text-align: center; padding: 7px 10px; border-radius: 5px; font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; }
+    .login-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); font-weight: 600; }
+
+    /* App Layout */
+    .app-shell { display: flex; min-height: calc(100vh - 50px); }
+    .sidebar {
+      width: 236px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 12px 0;
+    }
+    .side-group-label {
+      font-size: 11px; font-weight: 600; color: var(--text-light);
+      padding: 10px 18px 6px; letter-spacing: .04em; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .side-item {
+      width: 100%; border: none; background: transparent; text-align: left;
+      padding: 9px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer;
+      border-left: 3px solid transparent; transition: all .12s; font-family: inherit;
+    }
+    .side-item-inner { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .side-item:hover { background: #f8fafc; color: var(--text); }
+    .side-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; border-left-color: var(--primary); }
+    .side-divider { height: 1px; background: var(--border); margin: 10px 16px; }
+    .bucket-search-box { padding: 0 14px 8px; }
+    .bucket-search-box input { height: 30px; font-size: 12px; padding: 0 10px; background: #f9fafb; }
+    .bucket-list { flex: 1; overflow-y: auto; max-height: 44vh; padding: 0 8px; display: flex; flex-direction: column; gap: 2px; }
+    .bucket-item {
+      padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-2);
+    }
+    .bucket-item:hover { background: #f3f4f6; color: var(--text); }
+    .bucket-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+    .bucket-name-wrap { display: flex; align-items: center; gap: 7px; min-width: 0; }
+
+    /* Main Workspace */
+    .main-area { flex: 1; min-width: 0; padding: 20px 26px 56px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+    .page-title-block h2 { margin: 0; font-size: 18px; font-weight: 600; color: var(--text); }
+    .page-title-block p { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #f1f3f5;
+    }
+    .card-title { margin: 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px 18px; box-shadow: var(--shadow-sm); display: flex; align-items: flex-start; gap: 13px;
+    }
+    .kpi-icon { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .kpi-icon.blue { background: #eef5ff; color: var(--primary); }
+    .kpi-icon.orange { background: #fff3eb; color: var(--brand); }
+    .kpi-icon.green { background: var(--green-bg); color: var(--green); }
+    .kpi-icon.purple { background: #f3f0ff; color: #7c3aed; }
+    .kpi-label { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+    .kpi-val { font-size: 21px; font-weight: 600; color: var(--text); line-height: 1.25; }
+    .kpi-sub { font-size: 11.5px; color: var(--text-light); margin-top: 4px; }
+
+    .overview-split { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .kv-list { display: flex; flex-direction: column; gap: 8px; }
+    .kv-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 8px 12px; background: var(--surface-2); border: 1px solid #eef0f3; border-radius: 6px;
+    }
+    .kv-key { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+    .kv-val { font-family: var(--font-mono); font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .pool-item { border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; background: var(--surface-2); }
+
+    /* Tables */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; box-shadow: var(--shadow-sm); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; vertical-align: middle; }
+    th { background: #fafbfc; color: var(--text-muted); font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fbff; }
+
+    /* Gallery Grid Mode for Bucket Objects */
+    .obj-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); gap: 12px;
+    }
+    .obj-tile {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; display: flex; flex-direction: column; transition: all .15s; box-shadow: var(--shadow-sm);
+    }
+    .obj-tile:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .obj-thumb {
+      height: 122px; background: #f8fafc; display: flex; align-items: center; justify-content: center;
+      border-bottom: 1px solid #f1f3f5; cursor: pointer; overflow: hidden; position: relative;
+    }
+    .obj-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .obj-tile-body { padding: 10px 12px; }
+    .obj-tile-name { font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--text); }
+    .obj-tile-name:hover { color: var(--primary); }
+    .obj-tile-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; justify-content: space-between; }
+    .obj-tile-foot { padding: 6px 10px; background: #fafbfc; border-top: 1px solid #f1f3f5; display: flex; justify-content: space-between; align-items: center; }
+
+    .prog-wrap { display: flex; align-items: center; gap: 8px; }
+    .prog-bar { width: 104px; height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+    .prog-bar > div { height: 100%; background: var(--primary); border-radius: 999px; transition: width .2s; }
+    .prog-bar.warn > div { background: var(--brand); }
+    .prog-bar.err > div { background: var(--red); }
+
+    /* Bucket Banner */
+    .bucket-banner {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px 20px 0; margin-bottom: 14px; box-shadow: var(--shadow-sm);
+    }
+    .bucket-banner-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; }
+    .bucket-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .bucket-title-row h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .bucket-meta-row { font-size: 12px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .subtabs { display: flex; gap: 24px; border-top: 1px solid #f1f3f5; margin-top: 4px; }
+    .subtab {
+      background: none; border: none; padding: 10px 2px; font-size: 13px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; font-family: inherit;
+    }
+    .subtab:hover { color: var(--text); }
+    .subtab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .breadcrumb {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 8px 14px; margin-bottom: 12px; font-size: 12.5px;
+    }
+    .breadcrumb-path { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb-path a { color: var(--primary); text-decoration: none; cursor: pointer; font-weight: 500; }
+    .breadcrumb-path a:hover { text-decoration: underline; }
+    .breadcrumb-sep { color: var(--text-light); }
+
+    .obj-cell { display: flex; align-items: center; gap: 9px; min-width: 180px; }
+    .obj-link { color: var(--text); font-weight: 500; cursor: pointer; text-decoration: none; }
+    .obj-link:hover { color: var(--primary); text-decoration: underline; }
+
+    .acl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    .acl-option { border: 1.5px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: all .15s; background: var(--surface); }
+    .acl-option:hover { border-color: var(--primary); }
+    .acl-option.active { border-color: var(--primary); background: #f5f9ff; }
+    .acl-option h4 { margin: 0 0 4px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .acl-option p { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+    /* Inputs */
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+    input, textarea {
+      width: 100%; height: 36px; background: var(--surface); color: var(--text);
+      border: 1px solid var(--border-strong); border-radius: 6px; padding: 0 11px;
+      font-size: 13px; font-family: inherit; transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22,119,255,.12); }
+    input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--primary); cursor: pointer; vertical-align: middle; }
+    textarea { height: auto; min-height: 108px; padding: 9px 11px; font-family: var(--font-mono); font-size: 12px; line-height: 1.45; }
+    .input-group { position: relative; display: flex; align-items: center; }
+    .input-group input { padding-right: 36px; }
+    .input-eye { position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: inline-flex; align-items: center; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-row { margin-bottom: 14px; }
+    .form-row.full { grid-column: 1 / -1; }
+    .form-section-title {
+      font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 4px 0 12px;
+      padding-bottom: 6px; border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;
+    }
+
+    pre {
+      background: #171b22; color: #e5e7eb; border-radius: 6px; padding: 12px 14px;
+      overflow-x: auto; font-family: var(--font-mono); font-size: 12px; line-height: 1.5;
+      white-space: pre-wrap; word-break: break-all; margin: 0;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 1.5px dashed #93c5fd; background: #f8fbff; border-radius: 8px;
+      padding: 28px 20px; text-align: center; color: var(--text-2); cursor: pointer; transition: all .15s;
+    }
+    .dropzone:hover, .dropzone.drag { border-color: var(--primary); background: #eef5ff; color: var(--primary); }
+    .upload-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f3f5; font-size: 12px; }
+
+    /* Right Slide-Over Drawer (Alibaba Cloud OSS Standard) */
+    .drawer-bg {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.38);
+      backdrop-filter: blur(2px); display: flex; justify-content: flex-end; z-index: 65;
+    }
+    .drawer {
+      width: 100%; max-width: 580px; height: 100%; background: var(--surface);
+      box-shadow: -8px 0 32px rgba(15, 23, 42, 0.16);
+      display: flex; flex-direction: column; animation: slideIn .18s ease-out;
+    }
+    .drawer.wide { max-width: 680px; }
+    @keyframes slideIn { from { transform: translateX(30px); opacity: 0.7; } to { transform: translateX(0); opacity: 1; } }
+    .drawer-head {
+      padding: 16px 22px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .drawer-head h3 { margin: 0; font-size: 16px; font-weight: 600; }
+    .drawer-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+    .drawer-foot {
+      padding: 14px 22px; border-top: 1px solid var(--border); background: #fafbfc;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-shrink: 0;
+    }
+
+    /* Compact Centered Dialog (Create Bucket / Folder) */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.42); backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 70;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      width: 100%; max-width: 460px; box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .modal-head {
+      padding: 15px 20px; border-bottom: 1px solid #f1f3f5;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { margin: 0; font-size: 15.5px; font-weight: 600; }
+    .modal-body-pad { padding: 18px 20px; }
+    .modal-foot { padding: 12px 20px; background: #fafbfc; border-top: 1px solid #f1f3f5; display: flex; justify-content: flex-end; gap: 8px; }
+    .close-x {
+      background: none; border: none; width: 28px; height: 28px; border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 18px;
+      color: var(--text-muted); cursor: pointer;
+    }
+    .close-x:hover { background: #f3f4f6; color: var(--text); }
+
+    /* Toast */
+    .toast {
+      position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-left: 3px solid var(--primary); padding: 10px 18px; border-radius: 7px;
+      z-index: 120; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md);
+      display: flex; align-items: center; gap: 8px; max-width: 540px;
+    }
+    .toast.err { border-left-color: var(--red); }
+    .toast.ok { border-left-color: var(--green); }
+
+    /* Credential Expiry Alert Strip & Key Dropzone */
+    .alert-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 11px 16px; border-radius: var(--radius); margin-bottom: 16px;
+      border: 1px solid #fcd34d; background: #fffbeb; color: #92400e;
+      box-shadow: var(--shadow-sm);
+    }
+    .alert-banner.err { border-color: #fca5a5; background: #fef2f2; color: #991b1b; }
+    .alert-banner-left { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+    .key-dropzone {
+      border: 1.5px dashed var(--border-strong); border-radius: 7px; background: #fafbfc;
+      padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 8px; transition: border-color .15s, background .15s; cursor: pointer;
+    }
+    .key-dropzone:hover, .key-dropzone.dragover { border-color: var(--primary); background: var(--primary-soft); }
+    .key-inspect-pill {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 7px 11px; border-radius: 6px; font-size: 12px; margin-top: 6px;
+      border: 1px solid var(--border); background: #f8fafc;
+    }
+    .key-inspect-pill.ok { border-color: #a7f3d0; background: #ecfdf5; color: #065f46; }
+    .key-inspect-pill.err { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+
+    @media (max-width: 960px) {
+      .overview-split, .login-card-wrap, .acl-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 780px) {
+      .app-shell { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="logo-wrap" href="#" onclick="return false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF6A00"/>
+          <path d="M12 6.2L17 9.1V14.9L12 17.8L7 14.9V9.1L12 6.2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M7 9.1L12 12L17 9.1M12 12V17.8" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        <span>BanOSS</span>
+      </a>
+      <span class="logo-divider"></span>
+      <span class="product-name">
+        对象存储 OSS
+        <span class="region-pill"><span class="pulse-dot"></span><span id="header-region">us-east-1</span></span>
+      </span>
+    </div>
+    <div class="topbar-right">
+      <span id="role-badge" class="nav-chip">控制台</span>
+      <a id="switch-mode-link" class="nav-link" href="/console">切换入口</a>
+      <button id="logout-btn" class="nav-link hidden">退出登录</button>
+    </div>
+  </header>
+
+  <!-- Login View -->
+  <section id="login-view" class="login-shell hidden">
+    <div class="login-card-wrap">
+      <div class="login-hero">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF6A00"/>
+              <path d="M12 6.2L17 9.1V14.9L12 17.8L7 14.9V9.1L12 6.2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M7 9.1L12 12L17 9.1M12 12V17.8" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+            <span style="font-weight:600;font-size:16px">BanOSS Enterprise</span>
+          </div>
+          <h1>加密多节点对象存储网关</h1>
+          <p>对标阿里云 OSS 体验，将多个超算 SFTP 存储账号聚合为统一 S3 存储池。</p>
+          <ul class="hero-list">
+            <li><span class="hero-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><span><strong>零信任分块加密</strong>：AES-256-GCM 透明分块加密与密文随机路径，远端节点零明文</span></li>
+            <li><span class="hero-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span><span><strong>多账号容量叠加</strong>：多节点优先级顺延写满自动路由，支持网页大文件自动分片</span></li>
+            <li><span class="hero-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span><strong>Vault 灾备保险箱</strong>：scrypt + AES-256-GCM 二次加密元数据与主密钥</span></li>
+          </ul>
+        </div>
+        <div style="font-size:11.5px;color:#6b7280;margin-top:24px">AWS SigV4 Compatible · SQLite WAL · Async SFTP Pool</div>
+      </div>
+
+      <div class="login-pane">
+        <div class="login-tabs">
+          <a id="tab-link-console" class="login-tab" href="/console">OSS 用户 (AK/SK)</a>
+          <a id="tab-link-admin" class="login-tab" href="/admin">超级管理员</a>
+        </div>
+        <h2 id="login-title" style="margin:0 0 6px;font-size:20px;font-weight:600">登录 BanOSS</h2>
+        <p id="login-desc" style="margin:0 0 22px;color:var(--text-muted);font-size:12.5px"></p>
+
+        <div id="admin-login-fields" class="hidden">
+          <div class="form-row">
+            <label>管理员 Token</label>
+            <div class="input-group">
+              <input id="login-token" type="password" placeholder="粘贴 BANOSS_ADMIN_TOKEN 或 .admin.token" onkeydown="if(event.key==='Enter')doLogin()" />
+              <button type="button" class="input-eye" onclick="toggleSecret('login-token')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="user-login-fields" class="hidden">
+          <div class="form-row">
+            <label>Access Key ID</label>
+            <input id="login-ak" placeholder="BANOSS..." onkeydown="if(event.key==='Enter')doLogin()" />
+          </div>
+          <div class="form-row">
+            <label>Access Key Secret</label>
+            <div class="input-group">
+              <input id="login-sk" type="password" placeholder="输入 Secret Key" onkeydown="if(event.key==='Enter')doLogin()" />
+              <button type="button" class="input-eye" onclick="toggleSecret('login-sk')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn orange" style="width:100%;height:38px;margin-top:8px;font-size:14px" onclick="doLogin()">立即登录</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- App Layout -->
+  <div id="app-view" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="side-group-label">对象存储 OSS</div>
+      <button class="side-item active" data-tab="overview">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          <span>概览与接入</span>
+        </span>
+      </button>
+      <button class="side-item" data-tab="oss">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+          <span>Bucket 文件管理</span>
+        </span>
+        <span id="sidebar-bucket-count" class="badge" style="padding:0 6px;font-size:10px">0</span>
+      </button>
+
+      <div class="side-group-label admin-only hidden" style="margin-top:6px">基础设施与安全</div>
+      <button class="side-item admin-only hidden" data-tab="backends">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><line x1="6" y1="7" x2="6.01" y2="7"/><line x1="6" y1="17" x2="6.01" y2="17"/></svg>
+          <span>SFTP 存储节点池</span>
+        </span>
+        <span id="sidebar-cred-alert-badge" class="badge err hidden" style="padding:0 6px;font-size:10px">0</span>
+      </button>
+      <button class="side-item admin-only hidden" data-tab="users">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>S3 用户与节点绑定</span>
+        </span>
+      </button>
+      <button class="side-item admin-only hidden" data-tab="requests">
+        <span class="side-item-inner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Bucket 申请审批</span>
+        </span>
+        <span id="sidebar-req-count" class="badge warn hidden" style="padding:0 6px;font-size:10px">0</span>
+      </button>
+
+      <div class="side-divider"></div>
+      <div class="side-group-label" style="padding-top:2px">
+        <span>Bucket 列表</span>
+        <button class="btn-link" onclick="openBucketModal()">+ 创建</button>
+      </div>
+      <div class="bucket-search-box">
+        <input id="sidebar-bucket-filter" placeholder="搜索 Bucket..." oninput="renderSidebarBuckets()" />
+      </div>
+      <div id="sidebar-buckets" class="bucket-list"></div>
+    </aside>
+
+    <main class="main-area">
+      <div id="admin-cred-alert-bar" class="hidden"></div>
+      <!-- Overview -->
+      <div id="tab-overview" class="tab-pane">
+        <div class="page-header">
+          <div class="page-title-block">
+            <h2>对象存储 OSS 概览</h2>
+            <p>实时容量监控、连接池健康度、S3 接入参数与加密灾备包</p>
+          </div>
+          <div class="actions">
+            <button class="btn orange" onclick="openBucketModal()">+ 创建 Bucket</button>
+            <button class="btn sec" onclick="loadAll()">刷新状态</button>
+          </div>
+        </div>
+        <div class="kpi-grid" id="stats-grid"></div>
+        <div id="overview-extra"></div>
+      </div>
+
+      <!-- OSS Workspace -->
+      <div id="tab-oss" class="tab-pane hidden">
+        <div id="oss-empty" class="card hidden" style="text-align:center;padding:52px 20px">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" style="margin-bottom:10px">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+          </svg>
+          <h3 style="margin:0 0 6px;font-size:16px">暂无存储空间 (Bucket)</h3>
+          <p style="margin:0 0 18px;color:var(--text-muted);font-size:13px">创建一个 Bucket 来管理文件、开启公共读外链或配置 CORS 跨域访问。</p>
+          <button class="btn orange" onclick="openBucketModal()">+ 立即创建 Bucket</button>
+        </div>
+
+        <div id="oss-workspace" class="hidden">
+          <div class="bucket-banner">
+            <div class="bucket-banner-top">
+              <div>
+                <div class="bucket-title-row">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+                  </svg>
+                  <h2 id="oss-bucket-title"></h2>
+                  <span id="oss-bucket-acl-badge" class="badge"></span>
+                  <span id="oss-bucket-cors-badge" class="badge"></span>
+                </div>
+                <div id="oss-bucket-meta" class="bucket-meta-row"></div>
+              </div>
+              <div class="actions">
+                <button class="btn sec sm" onclick="copyText('s3://' + state.currentBucket)">复制 S3 URI</button>
+                <button class="btn danger sm" onclick="deleteCurrentBucket()">删除 Bucket</button>
+              </div>
+            </div>
+            <div class="subtabs">
+              <button class="subtab active" id="subtab-btn-files" onclick="switchBucketSubtab('files')">文件管理</button>
+              <button class="subtab" id="subtab-btn-perm" onclick="switchBucketSubtab('perm')">读写权限与跨域 (ACL / CORS)</button>
+            </div>
+          </div>
+
+          <div id="bucket-sub-files">
+            <div class="toolbar">
+              <div class="actions">
+                <button class="btn" onclick="openUploadDrawer()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  上传文件（自动分片）
+                </button>
+                <button class="btn sec" onclick="openFolderModal()">+ 新建目录</button>
+                <button class="btn danger" id="batch-del-btn" disabled onclick="batchDelete()">删除选中</button>
+              </div>
+              <div class="actions">
+                <div class="view-toggle">
+                  <button id="vt-list" class="active" onclick="setViewMode('list')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    列表
+                  </button>
+                  <button id="vt-grid" onclick="setViewMode('grid')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    图库视图
+                  </button>
+                </div>
+                <input id="prefix-filter" placeholder="搜索当前前缀..." style="width:200px;height:32px" onkeydown="if(event.key==='Enter')loadObjects()" />
+                <button class="btn sec" style="height:32px" onclick="loadObjects()">刷新</button>
+              </div>
+            </div>
+
+            <div class="breadcrumb">
+              <div id="breadcrumb" class="breadcrumb-path"></div>
+              <span id="objects-count-summary" style="color:var(--text-muted);font-size:12px"></span>
+            </div>
+
+            <div id="objects-list-wrap" class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:38px"><input type="checkbox" id="chk-all" onchange="toggleSelectAll(this.checked)" /></th>
+                    <th>文件名 / 目录</th>
+                    <th style="width:110px">大小</th>
+                    <th>类型 / ETag</th>
+                    <th style="width:185px">修改时间</th>
+                    <th style="width:255px">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="objects-tbody"></tbody>
+              </table>
+            </div>
+            <div id="objects-grid-wrap" class="obj-grid hidden"></div>
+          </div>
+
+          <div id="bucket-sub-perm" class="hidden">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">读写权限 (Bucket ACL)</h3>
+                <span class="badge blue">S3 标准权限模型</span>
+              </div>
+              <div class="acl-grid">
+                <div class="acl-option" id="acl-card-private" onclick="setBucketAcl('private')">
+                  <h4>私有 (Private) <span class="badge ok">安全默认</span></h4>
+                  <p>仅 Bucket 拥有者通过 AK/SK 签名或预签名临时链接读写，适合个人备份、重要数据与内部文件。</p>
+                </div>
+                <div class="acl-option" id="acl-card-public" onclick="setBucketAcl('public-read')">
+                  <h4>公共读 (Public Read) <span class="badge warn">外链直访</span></h4>
+                  <p>允许任何人通过固定直链免签名 GET/HEAD 读取，写入/删除仍严格需要 AK/SK 鉴权，适合图床与静态资源。</p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">跨域资源共享 (CORS)</h3>
+                <div class="actions">
+                  <button class="btn sec sm" onclick="presetInlineCors()">一键允许全部源 (*)</button>
+                  <button class="btn sm" onclick="saveInlineCors()">保存 CORS 规则</button>
+                </div>
+              </div>
+              <p style="margin:0 0 10px;font-size:12px;color:var(--text-muted)">配置允许浏览器前端直接调用该 Bucket 资源的源域名与 HTTP 方法（JSON 数组格式）。</p>
+              <textarea id="inline-cors-json" style="min-height:170px"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backends (Admin only) -->
+      <div id="tab-backends" class="tab-pane hidden">
+        <div class="page-header">
+          <div class="page-title-block">
+            <h2>SFTP / 本地存储节点池</h2>
+            <p>支持超算 E-Shell / SSH 多账号纳管、保存前连通性测试、在线编辑与一键全部探活</p>
+          </div>
+          <div class="actions">
+            <button class="btn sec" onclick="probeAllBackends()">一键全部探活</button>
+            <button class="btn orange" onclick="openBackendDrawer()">+ 添加存储节点</button>
+          </div>
+        </div>
+        <div class="kpi-grid" id="backends-kpi"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>节点名称</th>
+                <th>协议 / 连接地址</th>
+                <th>存储根目录</th>
+                <th>已用 / 配额</th>
+                <th>连接池 (活动/空闲/上限)</th>
+                <th>凭据有效期</th>
+                <th>健康状态</th>
+                <th style="width:255px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="backends-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Users & Bindings (Admin only) -->
+      <div id="tab-users" class="tab-pane hidden">
+        <div class="page-header">
+          <div class="page-title-block">
+            <h2>S3 用户与多节点路由绑定</h2>
+            <p>支持创建与编辑用户配额及加密策略，并将多个超算账号按优先级聚合成大容量存储池</p>
+          </div>
+          <div class="actions">
+            <button class="btn sec" onclick="openBindingDrawer()">+ 绑定用户与节点</button>
+            <button class="btn orange" onclick="openUserDrawer()">+ 新建 S3 用户</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="card-header" style="padding:14px 18px;margin-bottom:0">
+            <h3 class="card-title">S3 访问账号列表</h3>
+            <span class="badge">支持随时调整配额 / 启停 / 透明加密</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>用户名</th>
+                  <th>Access Key ID</th>
+                  <th>加密 / 状态</th>
+                  <th>已用空间 / 总配额</th>
+                  <th>挂载情况</th>
+                  <th style="width:230px">操作</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="card-header" style="padding:14px 18px;margin-bottom:0">
+            <h3 class="card-title">用户 - 节点路由绑定关系</h3>
+            <span style="font-size:12px;color:var(--text-muted)">优先级数字越小越先写入，写满后自动溢出路由到下一节点</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>用户</th>
+                  <th>目标存储节点</th>
+                  <th>写入优先级</th>
+                  <th>该节点用量 / 配额上限</th>
+                  <th style="width:140px">操作</th>
+                </tr>
+              </thead>
+              <tbody id="bindings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bucket Approval Requests (Admin only) -->
+      <div id="tab-requests" class="tab-pane hidden">
+        <div class="page-header">
+          <div class="page-title-block">
+            <h2>用户 Bucket 开通申请审批</h2>
+            <p>审核注册用户提交的 Bucket 与容量申请，一键绑定后端存储节点并自动创建 Bucket（用户端不可见真实存储节点与路径）</p>
+          </div>
+          <div class="actions">
+            <button class="btn sec" onclick="loadAll()">刷新申请列表</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>申请用户</th>
+                <th>申请 Bucket</th>
+                <th>访问权限</th>
+                <th>申请容量</th>
+                <th>用途说明</th>
+                <th>审批状态</th>
+                <th>申请时间</th>
+                <th style="width:165px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="requests-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Right Slide-Over Drawer -->
+  <div id="drawer-bg" class="drawer-bg hidden">
+    <div id="drawer-panel" class="drawer">
+      <div class="drawer-head">
+        <h3 id="drawer-title"></h3>
+        <button class="close-x" onclick="closeDrawer()">&times;</button>
+      </div>
+      <div id="drawer-body" class="drawer-body"></div>
+      <div id="drawer-foot" class="drawer-foot"></div>
+    </div>
+  </div>
+
+  <!-- Centered Compact Dialog -->
+  <div id="modal-bg" class="modal-bg hidden">
+    <div class="modal" id="modal-panel"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+    const isAdminMode = location.pathname.startsWith("/admin");
+    const apiBase = isAdminMode ? "/api/admin" : "/api/console";
+    const MULTIPART_THRESHOLD = 24 * 1024 * 1024; // 24 MiB chunk threshold (safe below CF 100MB limit)
+
+    const state = {
+      me: null,
+      overview: null,
+      backends: [],
+      users: [],
+      bindings: [],
+      buckets: [],
+      currentBucket: "",
+      currentPrefix: "",
+      folders: [],
+      files: [],
+      bucketSubtab: "files",
+      viewMode: "list",
+      drawerTab: "preview",
+      cselects: {},
+    };
+
+    function fmtBytes(b) {
+      b = Number(b || 0);
+      if (b === 0) return "0 B";
+      const u = ["B", "KiB", "MiB", "GiB", "TiB"];
+      const i = Math.min(u.length - 1, Math.floor(Math.log(b) / Math.log(1024)));
+      return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2) + " " + u[i];
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+    function escJs(s) {
+      return String(s ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    function toast(msg, kind = "info") {
+      const el = document.getElementById("toast");
+      el.className = `toast ${kind === "err" ? "err" : (kind === "ok" ? "ok" : "")}`;
+      const icon = kind === "err"
+        ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+        : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${kind === "ok" ? "#00a870" : "#1677ff"}" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>`;
+      el.innerHTML = `${icon}<span>${esc(msg)}</span>`;
+      el.classList.remove("hidden");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.add("hidden"), 3800);
+    }
+
+    function toggleSecret(id) {
+      const el = document.getElementById(id);
+      if (el) el.type = el.type === "password" ? "text" : "password";
+    }
+
+    function copyText(t) {
+      navigator.clipboard.writeText(t).then(() => toast("已复制到剪贴板", "ok"));
+    }
+
+    // ---- Custom Enterprise Select Component (Zero native <select>) ----
+    function renderSelect(id, options, selectedValue = "", opts = {}) {
+      const chosen = options.find(o => String(o.value) === String(selectedValue)) || options[0] || { value: "", label: opts.placeholder || "请选择", sub: "" };
+      state.cselects[id] = { options, value: chosen.value, onChange: opts.onChange || null };
+      const searchHtml = opts.searchable || options.length > 5
+        ? `<input class="cselect-search" placeholder="搜索选项..." onclick="event.stopPropagation()" oninput="filterCSelect('${id}', this.value)" />`
+        : "";
+      return `
+        <div class="cselect" id="cs-${id}" data-val="${esc(chosen.value)}">
+          <button type="button" class="cselect-btn" onclick="toggleCSelect('${id}', event)">
+            <span class="truncate" style="display:flex;align-items:center;gap:6px">
+              <span>${esc(chosen.label)}</span>
+              ${chosen.badge ? `<span class="badge blue" style="padding:0 5px">${esc(chosen.badge)}</span>` : ""}
+            </span>
+            <svg class="cselect-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="cselect-menu" id="csm-${id}">
+            ${searchHtml}
+            <div id="cso-${id}">${_cselectOptionsHtml(id, options, chosen.value)}</div>
+          </div>
+        </div>`;
+    }
+
+    function _cselectOptionsHtml(id, options, activeVal) {
+      if (!options.length) return `<div style="padding:10px;text-align:center;color:var(--text-light);font-size:12px">暂无可选项</div>`;
+      return options.map((o, idx) => {
+        const isAct = String(o.value) === String(activeVal);
+        return `
+          <div class="cselect-opt ${isAct ? "active" : ""}" onclick="pickCSelect('${id}', ${idx}, event)">
+            <div class="cselect-opt-main">
+              <span class="cselect-opt-label">${esc(o.label)} ${o.badge ? `<span class="badge" style="margin-left:4px;padding:0 5px">${esc(o.badge)}</span>` : ""}</span>
+              ${o.sub ? `<span class="cselect-opt-sub">${esc(o.sub)}</span>` : ""}
+            </div>
+            ${isAct ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1677ff" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>` : ""}
+          </div>`;
+      }).join("");
+    }
+
+    function toggleCSelect(id, ev) {
+      ev.stopPropagation();
+      const wrap = document.getElementById(`cs-${id}`);
+      const wasOpen = wrap.classList.contains("open");
+      document.querySelectorAll(".cselect.open").forEach(el => el.classList.remove("open"));
+      if (!wasOpen) wrap.classList.add("open");
+    }
+
+    function filterCSelect(id, q) {
+      const cfg = state.cselects[id];
+      if (!cfg) return;
+      const lq = q.trim().toLowerCase();
+      const subOpts = cfg.options.filter(o => !lq || o.label.toLowerCase().includes(lq) || (o.sub || "").toLowerCase().includes(lq));
+      document.getElementById(`cso-${id}`).innerHTML = subOpts.map(o => {
+        const origIdx = cfg.options.indexOf(o);
+        const isAct = String(o.value) === String(cfg.value);
+        return `
+          <div class="cselect-opt ${isAct ? "active" : ""}" onclick="pickCSelect('${id}', ${origIdx}, event)">
+            <div class="cselect-opt-main">
+              <span class="cselect-opt-label">${esc(o.label)}</span>
+              ${o.sub ? `<span class="cselect-opt-sub">${esc(o.sub)}</span>` : ""}
+            </div>
+            ${isAct ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1677ff" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>` : ""}
+          </div>`;
+      }).join("") || `<div style="padding:10px;text-align:center;color:var(--text-light);font-size:12px">无匹配项</div>`;
+    }
+
+    function pickCSelect(id, idx, ev) {
+      ev.stopPropagation();
+      const cfg = state.cselects[id];
+      if (!cfg) return;
+      const opt = cfg.options[idx];
+      if (!opt) return;
+      cfg.value = opt.value;
+      const wrap = document.getElementById(`cs-${id}`);
+      wrap.dataset.val = opt.value;
+      wrap.classList.remove("open");
+      wrap.querySelector(".cselect-btn span").innerHTML = `<span>${esc(opt.label)}</span>${opt.badge ? `<span class="badge blue" style="padding:0 5px">${esc(opt.badge)}</span>` : ""}`;
+      document.getElementById(`cso-${id}`).innerHTML = _cselectOptionsHtml(id, cfg.options, opt.value);
+      if (cfg.onChange) cfg.onChange(opt.value, opt);
+    }
+
+    function getSelectValue(id) {
+      return state.cselects[id]?.value ?? "";
+    }
+
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".cselect.open").forEach(el => el.classList.remove("open"));
+    });
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts,
+      });
+      if (res.status === 401) {
+        showLogin();
+        throw new Error("未登录或会话已失效");
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function setupModeUI() {
+      const sw = document.getElementById("switch-mode-link");
+      const rb = document.getElementById("role-badge");
+      document.getElementById("tab-link-console").classList.toggle("active", !isAdminMode);
+      document.getElementById("tab-link-admin").classList.toggle("active", isAdminMode);
+
+      if (isAdminMode) {
+        rb.textContent = "超级管理员";
+        rb.className = "nav-chip admin";
+        sw.href = "/console";
+        sw.textContent = "用户控制台";
+        document.getElementById("login-title").textContent = "管理员控制台登录";
+        document.getElementById("login-desc").textContent = "请输入服务端 BANOSS_ADMIN_TOKEN 或 data/.admin.token 登录。";
+        document.getElementById("admin-login-fields").classList.remove("hidden");
+      } else {
+        rb.textContent = "OSS 用户端";
+        rb.className = "nav-chip";
+        sw.href = "/admin";
+        sw.textContent = "管理员入口";
+        document.getElementById("login-title").textContent = "OSS 控制台登录";
+        document.getElementById("login-desc").textContent = "使用管理员签发的 Access Key 与 Secret Key 登录管理个人存储空间。";
+        document.getElementById("user-login-fields").classList.remove("hidden");
+      }
+    }
+
+    function showLogin() {
+      document.getElementById("login-view").classList.remove("hidden");
+      document.getElementById("app-view").classList.add("hidden");
+      document.getElementById("logout-btn").classList.add("hidden");
+    }
+
+    function showApp() {
+      document.getElementById("login-view").classList.add("hidden");
+      document.getElementById("app-view").classList.remove("hidden");
+      document.getElementById("logout-btn").classList.remove("hidden");
+      document.querySelectorAll(".admin-only").forEach(el => el.classList.toggle("hidden", !isAdminMode));
+    }
+
+    async function doLogin() {
+      try {
+        if (isAdminMode) {
+          await api("/api/admin/login", { method: "POST", body: JSON.stringify({ token: document.getElementById("login-token").value.trim() }) });
+        } else {
+          await api("/api/console/login", {
+            method: "POST",
+            body: JSON.stringify({ access_key: document.getElementById("login-ak").value.trim(), secret_key: document.getElementById("login-sk").value.trim() }),
+          });
+        }
+        showApp();
+        await loadAll();
+        toast("登录成功", "ok");
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    document.getElementById("logout-btn").onclick = async () => {
+      await fetch(`${apiBase}/logout`, { method: "POST" });
+      showLogin();
+    };
+
+    function switchTab(tab) {
+      document.querySelectorAll("aside .side-item[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.add("hidden"));
+      document.getElementById(`tab-${tab}`).classList.remove("hidden");
+    }
+    document.querySelectorAll("aside .side-item[data-tab]").forEach(btn => { btn.onclick = () => switchTab(btn.dataset.tab); });
+
+    async function loadAll() {
+      if (isAdminMode) {
+        const [ov, bk, us, bd, bks, reqs] = await Promise.all([
+          api("/api/admin/overview"),
+          api("/api/admin/backends"),
+          api("/api/admin/users"),
+          api("/api/admin/bindings"),
+          api("/api/admin/buckets"),
+          api("/api/admin/bucket-requests"),
+        ]);
+        state.overview = ov;
+        state.backends = bk.backends;
+        state.users = us.users;
+        state.bindings = bd.bindings;
+        state.buckets = bks.buckets;
+        state.bucketRequests = reqs.requests || [];
+        const pendCnt = state.bucketRequests.filter(r => r.status === "pending").length;
+        const reqBadge = document.getElementById("sidebar-req-count");
+        if (reqBadge) {
+          reqBadge.textContent = pendCnt;
+          reqBadge.classList.toggle("hidden", pendCnt === 0);
+        }
+        document.getElementById("header-region").textContent = ov.region || "us-east-1";
+        renderCredentialAlertBanner();
+        renderAdminOverview();
+        renderBackends();
+        renderUsers();
+        renderBindings();
+        renderBucketRequests();
+      } else {
+        const [me, bks] = await Promise.all([api("/api/console/me"), api("/api/console/buckets")]);
+        state.me = me;
+        state.buckets = bks.buckets;
+        document.getElementById("header-region").textContent = me.region || "us-east-1";
+        document.getElementById("role-badge").textContent = `用户: ${me.user.username}`;
+        renderUserOverview();
+      }
+      renderSidebarBuckets();
+    }
+
+    function fmtCredDuration(absSec) {
+      const s = Math.max(0, Math.floor(absSec));
+      if (s < 60) return `${s}秒`;
+      const m = Math.floor(s / 60);
+      if (m < 60) return `${m}分钟`;
+      const h = Math.floor(m / 60);
+      const rm = m % 60;
+      if (h < 48) return rm > 0 ? `${h}小时${rm}分` : `${h}小时`;
+      const d = Math.floor(h / 24);
+      const rh = h % 24;
+      return rh > 0 ? `${d}天${rh}小时` : `${d}天`;
+    }
+
+    function getCredBadgeHtml(b) {
+      if (b.protocol !== "sftp") return `<span class="badge" style="color:var(--text-light)">本地免凭据</span>`;
+      const rem = b.credential_remaining_seconds;
+      const upd = b.credential_updated_at ? `最近更新: ${new Date(b.credential_updated_at).toLocaleString("zh-CN")}` : "";
+      const exp = b.credential_expires_at ? `到期时间: ${new Date(b.credential_expires_at).toLocaleString("zh-CN")}` : "";
+      const tip = [upd, exp].filter(Boolean).join(" | ");
+      if (b.credential_status === "expired") {
+        return `<span class="badge err" title="${esc(tip)}">已过期 ${fmtCredDuration(-rem)}</span>`;
+      }
+      if (b.credential_status === "expiring_soon") {
+        return `<span class="badge warn" title="${esc(tip)}">即将过期 · 剩 ${fmtCredDuration(rem)}</span>`;
+      }
+      if (b.credential_auth_error) {
+        return `<span class="badge err" title="${esc(b.last_message || "")}">认证失败需换钥</span>`;
+      }
+      if (b.credential_status === "valid") {
+        return `<span class="badge ok" title="${esc(tip)}">有效 · 剩 ${fmtCredDuration(rem)}</span>`;
+      }
+      return `<span class="badge" title="${esc(tip)}">${b.has_credential ? "长期 / 未设到期" : "未配置凭据"}</span>`;
+    }
+
+    function renderCredentialAlertBanner() {
+      const bar = document.getElementById("admin-cred-alert-bar");
+      const sideBadge = document.getElementById("sidebar-cred-alert-badge");
+      if (!isAdminMode) {
+        bar.className = "hidden";
+        sideBadge.classList.add("hidden");
+        return;
+      }
+      const alerts = (state.backends || []).filter(b =>
+        b.is_active && b.protocol === "sftp" &&
+        (b.credential_status === "expired" || b.credential_status === "expiring_soon" || b.credential_auth_error)
+      );
+      if (!alerts.length) {
+        bar.className = "hidden";
+        bar.innerHTML = "";
+        sideBadge.classList.add("hidden");
+        return;
+      }
+      sideBadge.textContent = alerts.length;
+      sideBadge.classList.remove("hidden");
+      const hasHardErr = alerts.some(a => a.credential_status === "expired" || a.credential_auth_error);
+      bar.className = `alert-banner ${hasHardErr ? "err" : ""}`;
+      const desc = alerts.map(a => {
+        if (a.credential_status === "expired") return `<strong>${esc(a.name)}</strong> (已过期 ${fmtCredDuration(-a.credential_remaining_seconds)})`;
+        if (a.credential_auth_error) return `<strong>${esc(a.name)}</strong> (SSH 认证失败)`;
+        return `<strong>${esc(a.name)}</strong> (剩 ${fmtCredDuration(a.credential_remaining_seconds)} 过期)`;
+      }).join(" · ");
+      const firstIdx = state.backends.findIndex(x => x.id === alerts[0].id);
+      bar.innerHTML = `
+        <div class="alert-banner-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div>
+            <div style="font-weight:600;margin-bottom:2px">SSH 存储凭据有效期提醒（${alerts.length} 个节点需关注）</div>
+            <div style="font-size:12px">${desc}</div>
+          </div>
+        </div>
+        <div class="actions" style="flex-shrink:0">
+          <button class="btn sec sm" onclick="switchTab('backends')">查看全部节点</button>
+          <button class="btn ${hasHardErr ? "danger" : "orange"} sm" onclick="openRotateCredentialDrawer(${firstIdx})">立即导入新密钥</button>
+        </div>`;
+    }
+
+    function renderAdminOverview() {
+      const s = state.overview.stats;
+      const cards = [
+        ["blue", "S3 访问用户", s.users, "独立 AK/SK 与加密策略", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`],
+        ["orange", "后端存储节点", s.backends, s.credential_alerts ? `${s.credential_alerts} 个节点凭据即将/已过期` : "SFTP / Local 节点池", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/></svg>`],
+        ["purple", "存储空间 (Buckets)", s.buckets, s.pending_bucket_requests ? `待审批用户申请: ${s.pending_bucket_requests} 条` : "私有 / 公共读 & CORS", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`],
+        ["blue", "索引对象总数", s.objects, `活跃分片上传: ${s.active_multiparts}`, `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`],
+        ["green", "逻辑数据总量", fmtBytes(s.logical_bytes), `物理占用: ${fmtBytes(s.physical_bytes)}`, `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`],
+      ];
+      document.getElementById("stats-grid").innerHTML = cards.map(([cls, label, val, sub, svg]) => `
+        <div class="kpi-card">
+          <div class="kpi-icon ${cls}">${svg}</div>
+          <div style="min-width:0"><div class="kpi-label">${esc(label)}</div><div class="kpi-val num">${esc(val)}</div><div class="kpi-sub">${esc(sub)}</div></div>
+        </div>`).join("");
+
+      const poolCards = state.backends.map((b, idx) => {
+        const stCls = b.last_status === "healthy" ? "ok" : (b.last_status === "error" ? "err" : "warn");
+        const needsCredAction = b.protocol === "sftp" && (b.credential_status === "expired" || b.credential_status === "expiring_soon" || b.credential_auth_error);
+        return `
+          <div class="pool-item">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+              <strong class="truncate">${esc(b.name)}</strong>
+              <span class="badge ${stCls}">${esc(b.last_status)}</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+              ${getCredBadgeHtml(b)}
+              ${needsCredAction ? `<button class="btn-link" onclick="openRotateCredentialDrawer(${idx})">更换密钥</button>` : ""}
+            </div>
+            <div class="mono" style="color:var(--text-muted);margin-bottom:4px">${esc(b.protocol.toUpperCase())} · 连接池 ${b.pool.active}/${b.pool.idle}/${b.pool.max_connections}</div>
+            <div style="font-size:11.5px;color:var(--text-light)" class="truncate">${esc(b.base_path)}</div>
+          </div>`;
+      }).join("") || `<div style="color:var(--text-muted);font-size:12px">暂未配置节点，前往「SFTP 存储节点池」添加。</div>`;
+
+      const backendOptions = state.backends.map(b => ({
+        value: b.id, label: b.name, badge: b.protocol.toUpperCase(),
+        sub: `${b.base_path} · 已用 ${fmtBytes(b.used_bytes)}`,
+      }));
+
+      document.getElementById("overview-extra").innerHTML = `
+        <div class="overview-split">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header">
+              <h3 class="card-title">后端连接池运行状态</h3>
+              <button class="btn-link" onclick="switchTab('backends')">管理全部节点 →</button>
+            </div>
+            <div class="pool-grid">${poolCards}</div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header">
+              <h3 class="card-title">S3 网关接入参数</h3>
+              <span class="badge orange">Path-Style</span>
+            </div>
+            <div class="kv-list">
+              <div class="kv-row"><span class="kv-key">Endpoint</span><span class="kv-val"><span class="truncate">${esc(location.origin)}</span><button class="btn-link" onclick="copyText('${escJs(location.origin)}')">复制</button></span></div>
+              <div class="kv-row"><span class="kv-key">Region / 分块</span><span class="kv-val">${esc(state.overview.region)} · AES-GCM ${fmtBytes(state.overview.chunk_size)}</span></div>
+              <div class="kv-row"><span class="kv-key">用户控制台</span><span class="kv-val"><span class="truncate">${esc(location.origin)}/console</span><button class="btn-link" onclick="copyText('${escJs(location.origin + "/console")}')">复制</button></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>加密灾备保险箱 (.vault)</span>
+            </h3>
+            <span class="badge ok">scrypt + AES-256-GCM 二次加密</span>
+          </div>
+          <p style="margin:0 0 14px;font-size:12.5px;color:var(--text-muted)">
+            对 <span class="mono">banoss.db</span> 与 <span class="mono">.master.key</span> 进行热备份与二次口令加密，可下载本地留存或一键加密推送到超算节点。
+          </p>
+          <div class="form-grid">
+            <div class="form-row" style="margin-bottom:0">
+              <label>灾备加密口令（至少 8 位）</label>
+              <div class="input-group">
+                <input id="vault-pass" type="password" placeholder="输入便于记忆的强口令" />
+                <button type="button" class="input-eye" onclick="toggleSecret('vault-pass')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:0">
+              <label>推送目标存储节点（可选）</label>
+              ${renderSelect("vault-backend", backendOptions, backendOptions[0]?.value || "", { placeholder: "请先添加存储节点" })}
+            </div>
+          </div>
+          <div class="actions" style="margin-top:14px">
+            <button class="btn orange" onclick="downloadVault()">下载加密灾备包 (.vault)</button>
+            <button class="btn sec" onclick="pushVault()">一键加密推送到选定节点</button>
+          </div>
+        </div>`;
+    }
+
+    async function downloadVault() {
+      const passphrase = document.getElementById("vault-pass").value;
+      if (passphrase.length < 8) { toast("口令至少 8 位", "err"); return; }
+      toast("正在生成加密灾备包...");
+      const res = await fetch("/api/admin/backup/download", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ passphrase }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(err.detail || "导出失败", "err");
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get("content-disposition") || "";
+      const m = cd.match(/filename="([^"]+)"/);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = m ? m[1] : "banoss-vault.vault";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("灾备包已导出下载", "ok");
+    }
+
+    async function pushVault() {
+      const passphrase = document.getElementById("vault-pass").value;
+      const backend_id = getSelectValue("vault-backend");
+      if (passphrase.length < 8) { toast("口令至少 8 位", "err"); return; }
+      if (!backend_id) { toast("请先添加并选择一个存储节点", "err"); return; }
+      toast("正在加密推送到节点...");
+      try {
+        const res = await api("/api/admin/backup/push", { method: "POST", body: JSON.stringify({ passphrase, backend_id }) });
+        toast(`已加密推送到 ${res.backend_name}: ${res.remote_path}`, "ok");
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function renderUserOverview() {
+      const u = state.me.user;
+      const quota = Number(u.quota_bytes || 0);
+      const cards = [
+        ["blue", "当前账号", u.username, u.encryption_enabled ? "AES-256-GCM 透明加密已开启" : "明文透传模式", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`],
+        ["purple", "我的 Buckets", state.buckets.length, "支持私有与公共读", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`],
+        ["green", "已用存储空间", fmtBytes(u.used_bytes), quota > 0 ? `总配额 ${fmtBytes(quota)}` : "遵循绑定节点配额", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`],
+        ["orange", "挂载存储节点", state.me.bindings.length, "按优先级自动溢出写入", `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/></svg>`],
+      ];
+      document.getElementById("stats-grid").innerHTML = cards.map(([cls, label, val, sub, svg]) => `
+        <div class="kpi-card"><div class="kpi-icon ${cls}">${svg}</div><div style="min-width:0"><div class="kpi-label">${esc(label)}</div><div class="kpi-val num">${esc(val)}</div><div class="kpi-sub">${esc(sub)}</div></div></div>
+      `).join("");
+
+      const bRows = state.me.bindings.map(b => {
+        const pct = b.quota_bytes > 0 ? Math.min(100, Math.round(b.used_bytes * 100 / b.quota_bytes)) : 0;
+        return `<tr>
+          <td><strong>${esc(b.backend_name)}</strong></td>
+          <td><span class="badge blue">${esc(b.backend_protocol.toUpperCase())}</span></td>
+          <td class="num">P${b.priority}</td>
+          <td><div class="prog-wrap">${b.quota_bytes > 0 ? `<div class="prog-bar ${pct > 90 ? 'err' : (pct > 75 ? 'warn' : '')}"><div style="width:${pct}%"></div></div>` : ''}<span class="num">${fmtBytes(b.used_bytes)} / ${b.quota_bytes > 0 ? fmtBytes(b.quota_bytes) : "不限"}</span></div></td>
+          <td><span class="badge ${b.is_active ? "ok" : "err"}">${b.is_active ? (b.read_only ? "只读" : "正常") : "停用"}</span></td>
+        </tr>`;
+      }).join("");
+
+      const rcloneSnippet = `[banoss]\ntype = s3\nprovider = Other\naccess_key_id = ${u.access_key}\nsecret_access_key = <你的 Secret Key>\nendpoint = ${location.origin}\nforce_path_style = true\nchunk_size = 32M`;
+      document.getElementById("overview-extra").innerHTML = `
+        <div class="overview-split">
+          <div class="card" style="margin-bottom:0;padding:0;overflow:hidden">
+            <div class="card-header" style="padding:14px 18px;margin-bottom:0"><h3 class="card-title">已分配底层存储节点</h3><span class="badge ok">多节点自动聚合</span></div>
+            <div style="overflow-x:auto">
+              <table><thead><tr><th>节点名称</th><th>协议</th><th>优先级</th><th>已用 / 配额</th><th>状态</th></tr></thead>
+              <tbody>${bRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">暂未绑定节点，请联系管理员在后台绑定</td></tr>'}</tbody></table>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header"><h3 class="card-title">S3 客户端快速接入</h3><button class="btn-link" onclick="copyText('${escJs(rcloneSnippet)}')">复制 rclone 配置</button></div>
+            <div class="kv-list" style="margin-bottom:12px">
+              <div class="kv-row"><span class="kv-key">Endpoint</span><span class="kv-val"><span class="truncate">${esc(location.origin)}</span><button class="btn-link" onclick="copyText('${escJs(location.origin)}')">复制</button></span></div>
+              <div class="kv-row"><span class="kv-key">Access Key</span><span class="kv-val"><span>${esc(u.access_key)}</span><button class="btn-link" onclick="copyText('${escJs(u.access_key)}')">复制</button></span></div>
+            </div>
+            <pre>${esc(rcloneSnippet)}</pre>
+          </div>
+        </div>`;
+    }
+
+    function renderSidebarBuckets() {
+      const box = document.getElementById("sidebar-buckets");
+      document.getElementById("sidebar-bucket-count").textContent = String(state.buckets.length);
+      if (!state.buckets.length) {
+        box.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--text-light)">暂无 Bucket</div>`;
+        state.currentBucket = "";
+        document.getElementById("oss-empty").classList.remove("hidden");
+        document.getElementById("oss-workspace").classList.add("hidden");
+        return;
+      }
+      if (!state.currentBucket || !state.buckets.some(b => b.name === state.currentBucket)) {
+        state.currentBucket = state.buckets[0].name;
+        state.currentPrefix = "";
+      }
+      const q = (document.getElementById("sidebar-bucket-filter")?.value || "").trim().toLowerCase();
+      const filtered = state.buckets.filter(b => !q || b.name.toLowerCase().includes(q));
+      box.innerHTML = filtered.map(b => `
+        <div class="bucket-item ${b.name === state.currentBucket ? "active" : ""}" onclick="selectBucket('${escJs(b.name)}')">
+          <span class="bucket-name-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <span class="truncate">${esc(b.name)}</span>
+          </span>
+          <span class="badge ${b.acl === "public-read" ? "warn" : ""}" style="font-size:10px;padding:1px 5px">${b.acl === "public-read" ? "公共" : "私有"}</span>
+        </div>`).join("") || `<div style="padding:10px 12px;font-size:12px;color:var(--text-light)">无匹配</div>`;
+      renderBucketHeader();
+      loadObjects();
+    }
+
+    function selectBucket(name) {
+      state.currentBucket = name;
+      state.currentPrefix = "";
+      document.getElementById("prefix-filter").value = "";
+      renderSidebarBuckets();
+      switchTab("oss");
+    }
+
+    function switchBucketSubtab(sub) {
+      state.bucketSubtab = sub;
+      document.getElementById("subtab-btn-files").classList.toggle("active", sub === "files");
+      document.getElementById("subtab-btn-perm").classList.toggle("active", sub === "perm");
+      document.getElementById("bucket-sub-files").classList.toggle("hidden", sub !== "files");
+      document.getElementById("bucket-sub-perm").classList.toggle("hidden", sub !== "perm");
+      if (sub === "perm") renderInlinePermissions();
+    }
+
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      document.getElementById("vt-list").classList.toggle("active", mode === "list");
+      document.getElementById("vt-grid").classList.toggle("active", mode === "grid");
+      renderObjectsView();
+    }
+
+    function renderInlinePermissions() {
+      const b = state.buckets.find(x => x.name === state.currentBucket);
+      if (!b) return;
+      document.getElementById("acl-card-private").classList.toggle("active", b.acl !== "public-read");
+      document.getElementById("acl-card-public").classList.toggle("active", b.acl === "public-read");
+      document.getElementById("inline-cors-json").value = JSON.stringify(b.cors_rules || [], null, 2);
+    }
+
+    function renderBucketHeader() {
+      const b = state.buckets.find(x => x.name === state.currentBucket);
+      if (!b) return;
+      document.getElementById("oss-empty").classList.add("hidden");
+      document.getElementById("oss-workspace").classList.remove("hidden");
+      document.getElementById("oss-bucket-title").textContent = b.name;
+      const aclBadge = document.getElementById("oss-bucket-acl-badge");
+      aclBadge.textContent = b.acl === "public-read" ? "公共读 (Public Read)" : "私有 (Private)";
+      aclBadge.className = `badge ${b.acl === "public-read" ? "warn" : "ok"}`;
+      const corsBadge = document.getElementById("oss-bucket-cors-badge");
+      const hasCors = (b.cors_rules || []).length > 0;
+      corsBadge.textContent = hasCors ? `CORS (${b.cors_rules.length} 规则)` : "CORS 未开启";
+      corsBadge.className = `badge ${hasCors ? "blue" : ""}`;
+      document.getElementById("oss-bucket-meta").innerHTML = `
+        <span>所有者: <strong>${esc(b.owner_username || "-")}</strong></span>
+        <span>对象数量: <strong class="num">${b.object_count}</strong></span>
+        <span>总容量: <strong class="num">${fmtBytes(b.total_size)}</strong></span>
+        <span>创建时间: <span class="mono">${esc(b.created_at)}</span></span>`;
+      if (state.bucketSubtab === "perm") renderInlinePermissions();
+    }
+
+    function renderBreadcrumb() {
+      const el = document.getElementById("breadcrumb");
+      const parts = state.currentPrefix.split("/").filter(Boolean);
+      let html = `<a onclick="enterPrefix('')">${esc(state.currentBucket || "根目录")}</a>`;
+      let acc = "";
+      for (const p of parts) {
+        acc += p + "/";
+        const target = acc;
+        html += `<span class="breadcrumb-sep">/</span><a onclick="enterPrefix('${escJs(target)}')">${esc(p)}</a>`;
+      }
+      el.innerHTML = html;
+    }
+
+    function enterPrefix(prefix) {
+      state.currentPrefix = prefix;
+      document.getElementById("prefix-filter").value = "";
+      loadObjects();
+    }
+
+    async function loadObjects() {
+      if (!state.currentBucket) return;
+      renderBreadcrumb();
+      const extraFilter = document.getElementById("prefix-filter").value.trim();
+      const queryPrefix = state.currentPrefix + extraFilter;
+      const data = await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects?prefix=${encodeURIComponent(queryPrefix)}&delimiter=%2F`);
+      state.folders = data.common_prefixes || [];
+      state.files = (data.contents || []).filter(o => o.key !== state.currentPrefix);
+      document.getElementById("objects-count-summary").textContent = `共 ${state.folders.length} 个目录 · ${state.files.length} 个文件`;
+      renderObjectsView();
+    }
+
+    function fileIconSvg(name, ctype, size = 16) {
+      if (ctype.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name)) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#1677ff" stroke-width="2" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+      }
+      if (ctype.startsWith("video/") || ctype.startsWith("audio/") || /\.(mp4|mkv|webm|mp3|wav)$/i.test(name)) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+      }
+      if (/\.(zip|tar|gz|7z|rar|vault)$/i.test(name)) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
+      }
+      return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    }
+
+    function renderObjectsView() {
+      const listWrap = document.getElementById("objects-list-wrap");
+      const gridWrap = document.getElementById("objects-grid-wrap");
+      listWrap.classList.toggle("hidden", state.viewMode !== "list");
+      gridWrap.classList.toggle("hidden", state.viewMode !== "grid");
+
+      const folderSvg = `<svg width="17" height="17" viewBox="0 0 24 24" fill="#FCD34D" stroke="#D97706" stroke-width="1.6" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+      if (state.viewMode === "list") {
+        const tb = document.getElementById("objects-tbody");
+        document.getElementById("chk-all").checked = false;
+        updateBatchBtn();
+        const folderRows = state.folders.map((cp, idx) => {
+          const display = cp.slice(state.currentPrefix.length);
+          return `<tr>
+            <td><input type="checkbox" class="row-chk" data-kind="prefix" data-val="${esc(cp)}" onchange="updateBatchBtn()" /></td>
+            <td><div class="obj-cell">${folderSvg}<a class="obj-link mono" onclick="enterPrefixIdx(${idx})">${esc(display)}</a></div></td>
+            <td class="num" style="color:var(--text-light)">-</td>
+            <td><span class="badge">目录</span></td>
+            <td style="color:var(--text-light)">-</td>
+            <td><div style="display:flex;align-items:center;gap:4px">
+              <button class="btn-link" onclick="enterPrefixIdx(${idx})">进入</button>
+              <span class="action-sep">|</span>
+              <button class="btn-link danger" onclick="deleteFolderIdx(${idx})">删除目录</button>
+            </div></td>
+          </tr>`;
+        }).join("");
+
+        const fileRows = state.files.map((o, idx) => {
+          const display = o.key.slice(state.currentPrefix.length);
+          const dlUrl = `${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(o.key)}`;
+          return `<tr>
+            <td><input type="checkbox" class="row-chk" data-kind="key" data-val="${esc(o.key)}" onchange="updateBatchBtn()" /></td>
+            <td><div class="obj-cell">${fileIconSvg(display, o.content_type)}<a class="obj-link mono" style="word-break:break-all" onclick="openObjectDrawer(${idx})">${esc(display)}</a></div></td>
+            <td class="num" style="white-space:nowrap">${fmtBytes(o.size)}</td>
+            <td class="mono"><span style="color:var(--text-2)">${esc(o.content_type)}</span><div style="font-size:11px;color:var(--text-light)">ETag: ${esc(o.etag.slice(0, 14))}…</div></td>
+            <td class="mono num" style="color:var(--text-muted);white-space:nowrap">${esc(o.updated_at)}</td>
+            <td><div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">
+              <button class="btn-link" onclick="openObjectDrawer(${idx})">详情/外链</button>
+              <span class="action-sep">|</span>
+              <a class="btn-link" href="${dlUrl}">下载</a>
+              <span class="action-sep">|</span>
+              <button class="btn-link" onclick="openRenameModal(${idx})">重命名</button>
+              <span class="action-sep">|</span>
+              <button class="btn-link danger" onclick="deleteObjectIdx(${idx})">删除</button>
+            </div></td>
+          </tr>`;
+        }).join("");
+        tb.innerHTML = (folderRows + fileRows) || `<tr><td colspan="6" style="text-align:center;padding:42px 16px;color:var(--text-muted)">当前目录为空，点击上方 <strong>上传文件</strong> 或 <strong>新建目录</strong></td></tr>`;
+      } else {
+        const folderTiles = state.folders.map((cp, idx) => {
+          const display = cp.slice(state.currentPrefix.length);
+          return `
+            <div class="obj-tile">
+              <div class="obj-thumb" onclick="enterPrefixIdx(${idx})">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="#FCD34D" stroke="#D97706" stroke-width="1.4"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="obj-tile-body">
+                <div class="obj-tile-name truncate mono" onclick="enterPrefixIdx(${idx})">${esc(display)}</div>
+                <div class="obj-tile-meta"><span>文件夹</span><span></span></div>
+              </div>
+              <div class="obj-tile-foot">
+                <button class="btn-link" onclick="enterPrefixIdx(${idx})">进入</button>
+                <button class="btn-link danger" onclick="deleteFolderIdx(${idx})">删除</button>
+              </div>
+            </div>`;
+        }).join("");
+
+        const fileTiles = state.files.map((o, idx) => {
+          const display = o.key.slice(state.currentPrefix.length);
+          const isImg = o.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(display);
+          const inlineUrl = `${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(o.key)}&inline=1`;
+          const dlUrl = `${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(o.key)}`;
+          return `
+            <div class="obj-tile">
+              <div class="obj-thumb" onclick="openObjectDrawer(${idx})">
+                ${isImg ? `<img src="${inlineUrl}" loading="lazy" alt="${esc(display)}" />` : fileIconSvg(display, o.content_type, 36)}
+              </div>
+              <div class="obj-tile-body">
+                <div class="obj-tile-name truncate mono" onclick="openObjectDrawer(${idx})" title="${esc(display)}">${esc(display)}</div>
+                <div class="obj-tile-meta"><span class="num">${fmtBytes(o.size)}</span><span>${esc(o.content_type.split("/")[1] || "file")}</span></div>
+              </div>
+              <div class="obj-tile-foot">
+                <div>
+                  <button class="btn-link" onclick="openObjectDrawer(${idx})">详情</button>
+                  <a class="btn-link" href="${dlUrl}">下载</a>
+                </div>
+                <button class="btn-link danger" onclick="deleteObjectIdx(${idx})">删除</button>
+              </div>
+            </div>`;
+        }).join("");
+        gridWrap.innerHTML = (folderTiles + fileTiles) || `<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:42px">当前目录为空</div>`;
+      }
+    }
+
+    function enterPrefixIdx(i) { const p = state.folders[i]; if (p !== undefined) enterPrefix(p); }
+    async function deleteFolderIdx(i) {
+      const prefix = state.folders[i];
+      if (!prefix || !confirm(`确定递归删除目录 ${prefix} 及其全部内容？`)) return;
+      const res = await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/delete-batch`, {
+        method: "POST", body: JSON.stringify({ keys: [], prefixes: [prefix] }),
+      });
+      toast(`已删除目录（共 ${res.deleted} 个对象）`, "ok");
+      await loadAll();
+    }
+    async function deleteObjectIdx(i) {
+      const o = state.files[i];
+      if (!o || !confirm(`确定删除 ${o.key}？`)) return;
+      await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects?key=${encodeURIComponent(o.key)}`, { method: "DELETE" });
+      toast("对象已删除", "ok");
+      await loadAll();
+    }
+
+    function toggleSelectAll(checked) { document.querySelectorAll(".row-chk").forEach(c => c.checked = checked); updateBatchBtn(); }
+    function updateBatchBtn() {
+      const checked = document.querySelectorAll(".row-chk:checked").length;
+      const btn = document.getElementById("batch-del-btn");
+      btn.disabled = checked === 0;
+      btn.textContent = checked > 0 ? `删除选中 (${checked})` : "删除选中";
+    }
+    async function batchDelete() {
+      const keys = [], prefixes = [];
+      document.querySelectorAll(".row-chk:checked").forEach(c => {
+        if (c.dataset.kind === "prefix") prefixes.push(c.dataset.val);
+        else keys.push(c.dataset.val);
+      });
+      if (!confirm(`确定删除选中的 ${keys.length} 个文件和 ${prefixes.length} 个目录？`)) return;
+      const res = await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/delete-batch`, {
+        method: "POST", body: JSON.stringify({ keys, prefixes }),
+      });
+      toast(`已删除 ${res.deleted} 个对象`, "ok");
+      await loadAll();
+    }
+
+    async function setBucketAcl(nextAcl) {
+      const b = state.buckets.find(x => x.name === state.currentBucket);
+      if (!b || b.acl === nextAcl) return;
+      const label = nextAcl === "public-read" ? "公共读（任何人可免签 GET/HEAD）" : "私有（仅带签名可访问）";
+      if (!confirm(`确认将 ${b.name} 权限切换为：${label}？`)) return;
+      await api(`${apiBase}/buckets/${encodeURIComponent(b.name)}`, { method: "PATCH", body: JSON.stringify({ acl: nextAcl }) });
+      toast(`Bucket 权限已更新为 ${nextAcl}`, "ok");
+      await loadAll();
+    }
+
+    function presetInlineCors() {
+      document.getElementById("inline-cors-json").value = JSON.stringify([{
+        allowed_origins: ["*"], allowed_methods: ["GET", "HEAD", "PUT", "POST", "DELETE"],
+        allowed_headers: ["*"], expose_headers: ["ETag", "Content-Length", "Content-Range"], max_age_seconds: 3600
+      }], null, 2);
+    }
+    async function saveInlineCors() {
+      try {
+        const rules = JSON.parse(document.getElementById("inline-cors-json").value);
+        await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}`, { method: "PATCH", body: JSON.stringify({ cors_rules: rules }) });
+        toast("CORS 配置已保存", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    async function deleteCurrentBucket() {
+      if (!confirm(`确定删除空 Bucket「${state.currentBucket}」？`)) return;
+      try {
+        await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}`, { method: "DELETE" });
+        state.currentBucket = "";
+        toast("Bucket 已删除", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    // ---- Drawers & Modals ----
+    let _drawerAllowBackdrop = false;
+    let _downOnDrawerBg = false;
+    let _downOnModalBg = false;
+
+    (() => {
+      const dbg = document.getElementById("drawer-bg");
+      dbg.addEventListener("mousedown", e => { _downOnDrawerBg = (e.target === dbg); });
+      dbg.addEventListener("click", e => {
+        if (_drawerAllowBackdrop && _downOnDrawerBg && e.target === dbg) closeDrawer();
+        _downOnDrawerBg = false;
+      });
+      dbg.addEventListener("dragover", e => e.preventDefault());
+      dbg.addEventListener("drop", e => {
+        if (!e.target.closest(".key-dropzone, .dropzone")) e.preventDefault();
+      });
+
+      const mbg = document.getElementById("modal-bg");
+      mbg.addEventListener("mousedown", e => { _downOnModalBg = (e.target === mbg); });
+      mbg.addEventListener("click", e => {
+        if (_downOnModalBg && e.target === mbg) closeModal();
+        _downOnModalBg = false;
+      });
+    })();
+
+    function openDrawer(title, bodyHtml, footHtml, opts = {}) {
+      const cfg = typeof opts === "boolean" ? { wide: opts } : (opts || {});
+      _drawerAllowBackdrop = Boolean(cfg.closeOnBackdrop);
+      const panel = document.getElementById("drawer-panel");
+      panel.classList.toggle("wide", Boolean(cfg.wide));
+      document.getElementById("drawer-title").textContent = title;
+      document.getElementById("drawer-body").innerHTML = bodyHtml;
+      document.getElementById("drawer-foot").innerHTML = footHtml;
+      document.getElementById("drawer-bg").classList.remove("hidden");
+    }
+    function closeDrawer() { document.getElementById("drawer-bg").classList.add("hidden"); }
+
+    function openModal(title, bodyHtml, footHtml) {
+      document.getElementById("modal-panel").innerHTML = `
+        <div class="modal-head"><h3>${title}</h3><button class="close-x" onclick="closeModal()">&times;</button></div>
+        <div class="modal-body-pad">${bodyHtml}</div>
+        <div class="modal-foot">${footHtml}</div>`;
+      document.getElementById("modal-bg").classList.remove("hidden");
+    }
+    function closeModal() { document.getElementById("modal-bg").classList.add("hidden"); }
+
+    // ---- Object All-in-One Details Drawer (Preview + Share + Rename + Segments) ----
+    async function openObjectDrawer(idx) {
+      const o = state.files[idx];
+      if (!o) return;
+      const key = o.key;
+      const dlUrl = `${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects/download?key=${encodeURIComponent(key)}`;
+      const inlineUrl = `${dlUrl}&inline=1`;
+
+      openDrawer(`文件详情 · ${key.split("/").pop()}`, `<p style="color:var(--text-muted)">加载中...</p>`,
+        `<a class="btn sec" href="${dlUrl}">下载原文件</a><button class="btn" onclick="closeDrawer()">关闭</button>`,
+        { wide: true, closeOnBackdrop: true });
+
+      const [info, share] = await Promise.all([
+        api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects/inspect?key=${encodeURIComponent(key)}`),
+        api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/presign`, { method: "POST", body: JSON.stringify({ key, expires_seconds: 3600 }) }),
+      ]);
+
+      let previewHtml = `<div style="padding:18px;text-align:center;background:#f9fafb;border-radius:6px;color:var(--text-muted)">暂不支持在线预览 (${esc(o.content_type)})</div>`;
+      if (o.content_type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(key)) {
+        previewHtml = `<div style="padding:10px;text-align:center;background:#f8fafc;border:1px solid var(--border);border-radius:6px"><img src="${inlineUrl}" style="max-width:100%;max-height:280px;border-radius:4px" /></div>`;
+      } else if (o.content_type.startsWith("video/")) {
+        previewHtml = `<video src="${inlineUrl}" controls style="width:100%;max-height:280px;border-radius:6px;background:#000"></video>`;
+      } else if (o.content_type.startsWith("audio/")) {
+        previewHtml = `<audio src="${inlineUrl}" controls style="width:100%"></audio>`;
+      } else if (o.content_type === "application/pdf") {
+        previewHtml = `<iframe src="${inlineUrl}" style="width:100%;height:320px;border:1px solid var(--border);border-radius:6px"></iframe>`;
+      } else if (o.content_type.startsWith("text/") || o.content_type.includes("json") || o.content_type.includes("xml") || /\.(txt|md|py|js|ts|json|yaml|yml|csv|log|sh|toml)$/i.test(key)) {
+        const res = await fetch(inlineUrl);
+        const txt = await res.text();
+        previewHtml = `<pre style="max-height:240px">${esc(txt.slice(0, 120000))}</pre>`;
+      }
+
+      const segRows = (info.segments || []).map(sg => `
+        <tr>
+          <td class="num">#${sg.part_number}</td>
+          <td><strong>${esc(sg.backend_name || sg.backend_id.slice(0,8))}</strong></td>
+          <td class="mono" style="word-break:break-all;font-size:11px">${esc(sg.remote_relpath)}</td>
+          <td class="num">${fmtBytes(sg.plain_size)} / ${fmtBytes(sg.remote_size)}</td>
+          <td><span class="badge ${sg.encrypted ? "ok" : "warn"}">${sg.encrypted ? "AES-GCM" : "明文"}</span></td>
+        </tr>`).join("");
+
+      document.getElementById("drawer-body").innerHTML = `
+        <div class="form-section-title" style="margin-top:0"><span>在线预览</span><span class="badge blue">${esc(o.content_type)}</span></div>
+        <div style="margin-bottom:18px">${previewHtml}</div>
+
+        <div class="form-section-title"><span>元数据信息</span><button class="btn-link" onclick="copyText('${escJs("s3://" + state.currentBucket + "/" + key)}')">复制 S3 URI</button></div>
+        <div class="kv-list" style="margin-bottom:18px">
+          <div class="kv-row"><span class="kv-key">对象 Key</span><span class="kv-val"><span class="truncate">${esc(key)}</span><button class="btn-link" onclick="openRenameModal(${idx})">重命名</button></span></div>
+          <div class="kv-row"><span class="kv-key">明文大小 / ETag</span><span class="kv-val">${fmtBytes(info.object.size)} · ${esc(info.object.etag)}</span></div>
+          <div class="kv-row"><span class="kv-key">最后修改时间</span><span class="kv-val">${esc(info.object.updated_at)}</span></div>
+        </div>
+
+        <div class="form-section-title"><span>外链分享 (SigV4 预签名)</span></div>
+        <div class="seg-group" style="margin-bottom:10px" id="share-ttl-seg">
+          <button type="button" class="seg-btn" onclick="refreshDrawerShare(${idx}, 900, this)">15 分钟</button>
+          <button type="button" class="seg-btn active" onclick="refreshDrawerShare(${idx}, 3600, this)">1 小时</button>
+          <button type="button" class="seg-btn" onclick="refreshDrawerShare(${idx}, 86400, this)">24 小时</button>
+          <button type="button" class="seg-btn" onclick="refreshDrawerShare(${idx}, 604800, this)">7 天</button>
+        </div>
+        <div id="drawer-share-box" style="margin-bottom:18px">${_renderShareBox(share)}</div>
+
+        <div class="form-section-title"><span>底层加密分片与存储节点分布</span><span class="badge ok">${(info.segments || []).length} 分片</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>分片</th><th>节点</th><th>远端密文路径</th><th>明文/密文</th><th>模式</th></tr></thead>
+          <tbody>${segRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">空对象</td></tr>'}</tbody></table>
+        </div>`;
+    }
+
+    function _renderShareBox(data) {
+      let html = `
+        <div style="margin-bottom:10px">
+          <label style="display:flex;justify-content:space-between"><span>预签名临时直链</span><button class="btn-link" onclick="copyText(document.getElementById('d-pre-url').textContent)">复制链接</button></label>
+          <pre id="d-pre-url">${esc(data.presigned_url)}</pre>
+        </div>`;
+      if (data.public_url) {
+        html += `
+          <div>
+            <label style="display:flex;justify-content:space-between"><span>公共读永久直链 (Public Read)</span><button class="btn-link" onclick="copyText(document.getElementById('d-pub-url').textContent)">复制永久直链</button></label>
+            <pre id="d-pub-url">${esc(data.public_url)}</pre>
+          </div>`;
+      }
+      return html;
+    }
+
+    async function refreshDrawerShare(idx, ttl, btnEl) {
+      const o = state.files[idx];
+      if (!o) return;
+      document.querySelectorAll("#share-ttl-seg .seg-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      const data = await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/presign`, {
+        method: "POST", body: JSON.stringify({ key: o.key, expires_seconds: ttl }),
+      });
+      document.getElementById("drawer-share-box").innerHTML = _renderShareBox(data);
+    }
+
+    function openRenameModal(idx) {
+      const o = state.files[idx];
+      if (!o) return;
+      openModal("重命名 / 移动对象路径", `
+        <div class="form-row"><label>原路径</label><div class="kv-row"><span class="mono">${esc(o.key)}</span></div></div>
+        <div class="form-row" style="margin-bottom:0"><label>新对象路径（可修改目录前缀实现移动）</label><input id="rename-new-key" value="${esc(o.key)}" onkeydown="if(event.key==='Enter')submitRename('${escJs(o.key)}')" /></div>`,
+        `<button class="btn sec" onclick="closeModal()">取消</button><button class="btn orange" onclick="submitRename('${escJs(o.key)}')">确认重命名</button>`);
+    }
+
+    async function submitRename(oldKey) {
+      const newKey = document.getElementById("rename-new-key").value.trim().replace(/^\/+/, "");
+      if (!newKey || newKey === oldKey) { closeModal(); return; }
+      try {
+        await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/objects/rename`, {
+          method: "POST", body: JSON.stringify({ old_key: oldKey, new_key: newKey }),
+        });
+        closeModal();
+        closeDrawer();
+        toast("重命名成功（零 SFTP 搬运，瞬间完成）", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    // ---- Create Bucket / Folder ----
+    function openBucketModal() {
+      let extra = "";
+      if (isAdminMode) {
+        const uOpts = state.users.map(u => ({ value: u.id, label: u.username, sub: u.access_key }));
+        extra = `<div class="form-row" style="margin-bottom:0"><label>所属 S3 用户</label>${renderSelect("nb-uid", uOpts, uOpts[0]?.value || "", { placeholder: "请先创建 S3 用户" })}</div>`;
+      } else {
+        extra = `
+          <div class="form-row" style="margin-bottom:0"><label>读写权限 (ACL)</label>
+            <div class="seg-group" id="nb-acl-seg" data-val="private">
+              <button type="button" class="seg-btn active" onclick="pickSeg('nb-acl-seg','private',this)">私有 (Private)</button>
+              <button type="button" class="seg-btn" onclick="pickSeg('nb-acl-seg','public-read',this)">公共读 (Public Read)</button>
+            </div>
+          </div>`;
+      }
+      openModal("创建存储空间 (Bucket)", `
+        <div class="form-row"><label>Bucket 名称（小写字母、数字、连字符，3-63 位）</label><input id="nb-name" placeholder="例如 datasets-2026" onkeydown="if(event.key==='Enter')submitBucket()" /></div>
+        ${extra}`,
+        `<button class="btn sec" onclick="closeModal()">取消</button><button class="btn orange" onclick="submitBucket()">确定创建</button>`);
+    }
+
+    function pickSeg(groupId, val, btnEl) {
+      const g = document.getElementById(groupId);
+      g.dataset.val = val;
+      g.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+      btnEl.classList.add("active");
+    }
+
+    async function submitBucket() {
+      const name = document.getElementById("nb-name").value.trim();
+      try {
+        const body = isAdminMode
+          ? { name, owner_user_id: getSelectValue("nb-uid") }
+          : { name, acl: document.getElementById("nb-acl-seg").dataset.val };
+        await api(`${apiBase}/buckets`, { method: "POST", body: JSON.stringify(body) });
+        closeModal();
+        state.currentBucket = name;
+        state.currentPrefix = "";
+        await loadAll();
+        switchTab("oss");
+        toast(`Bucket ${name} 创建成功`, "ok");
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    function openFolderModal() {
+      openModal("新建目录", `
+        <div class="form-row" style="margin-bottom:0">
+          <label>目录路径（当前位置：<span class="mono">${esc(state.currentPrefix || "/")}</span>）</label>
+          <input id="new-folder-name" placeholder="例如 models/checkpoints" onkeydown="if(event.key==='Enter')submitFolder()" />
+        </div>`,
+        `<button class="btn sec" onclick="closeModal()">取消</button><button class="btn" onclick="submitFolder()">创建目录</button>`);
+    }
+    async function submitFolder() {
+      const raw = document.getElementById("new-folder-name").value.trim().replace(/^\/+/, "");
+      if (!raw) return;
+      try {
+        await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/folders`, { method: "POST", body: JSON.stringify({ folder: state.currentPrefix + raw }) });
+        closeModal();
+        toast("目录已创建", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    // ---- Smart Chunked Upload Drawer (Auto-Multipart > 24 MiB to bypass CF 100MB limit) ----
+    function openUploadDrawer() {
+      openDrawer(`上传文件到 ${state.currentBucket}/${state.currentPrefix}`, `
+        <div id="dropzone" class="dropzone" onclick="document.getElementById('file-picker').click()">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1677ff" stroke-width="1.8" style="margin-bottom:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="font-weight:600;margin-bottom:4px">点击选择文件或直接拖拽多个文件至此</div>
+          <div style="font-size:12px;color:var(--text-muted)">文件 > 24 MiB 自动切片并发直传（穿透 Cloudflare 100MB 限制）并实时 AES-256-GCM 加密写入 SFTP</div>
+          <input id="file-picker" type="file" multiple class="hidden" onchange="startUploads(this.files)" />
+        </div>
+        <div id="upload-queue" style="margin-top:14px"></div>`,
+        `<span style="font-size:12px;color:var(--text-muted)">大文件自动走分片合并，零本地磁盘落盘</span><button class="btn" onclick="closeDrawer();loadAll()">完成</button>`);
+      const dz = document.getElementById("dropzone");
+      dz.ondragover = e => { e.preventDefault(); dz.classList.add("drag"); };
+      dz.ondragleave = () => dz.classList.remove("drag");
+      dz.ondrop = e => { e.preventDefault(); dz.classList.remove("drag"); startUploads(e.dataTransfer.files); };
+    }
+
+    async function startUploads(fileList) {
+      const q = document.getElementById("upload-queue");
+      for (const file of Array.from(fileList)) {
+        const key = state.currentPrefix + file.name;
+        const row = document.createElement("div");
+        row.className = "upload-row";
+        row.innerHTML = `
+          <div class="mono truncate" style="flex:1">${esc(file.name)} (${fmtBytes(file.size)})</div>
+          <div class="prog-bar" style="width:140px"><div style="width:0%"></div></div>
+          <div class="mono num" style="width:92px;text-align:right">等待</div>`;
+        q.appendChild(row);
+        const bar = row.querySelector(".prog-bar > div");
+        const pctEl = row.lastElementChild;
+
+        if (file.size <= MULTIPART_THRESHOLD) {
+          await new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/upload?key=${encodeURIComponent(key)}`);
+            xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+            xhr.upload.onprogress = ev => {
+              if (ev.lengthComputable) {
+                const p = Math.round(ev.loaded * 100 / ev.total);
+                bar.style.width = p + "%";
+                pctEl.textContent = p + "%";
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) { bar.style.background = "var(--green)"; pctEl.textContent = "已完成"; }
+              else { bar.style.background = "var(--red)"; pctEl.textContent = "失败"; try { toast(JSON.parse(xhr.responseText).detail, "err"); } catch {} }
+              resolve();
+            };
+            xhr.onerror = () => { bar.style.background = "var(--red)"; pctEl.textContent = "网络错误"; resolve(); };
+            xhr.send(file);
+          });
+        } else {
+          // Automatic chunked multipart upload (24 MiB slices)
+          try {
+            const totalParts = Math.ceil(file.size / MULTIPART_THRESHOLD);
+            const initRes = await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/multipart/init`, {
+              method: "POST",
+              body: JSON.stringify({ key, content_type: file.type || "application/octet-stream", total_size: file.size }),
+            });
+            const uploadId = initRes.upload_id;
+            for (let pn = 1; pn <= totalParts; pn++) {
+              const start = (pn - 1) * MULTIPART_THRESHOLD;
+              const end = Math.min(file.size, start + MULTIPART_THRESHOLD);
+              const slice = file.slice(start, end);
+              await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", `${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/multipart/${uploadId}/part?part_number=${pn}`);
+                xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                xhr.upload.onprogress = ev => {
+                  if (ev.lengthComputable) {
+                    const overall = Math.round(((start + ev.loaded) * 100) / file.size);
+                    bar.style.width = overall + "%";
+                    pctEl.textContent = `${pn}/${totalParts} · ${overall}%`;
+                  }
+                };
+                xhr.onload = () => {
+                  if (xhr.status >= 200 && xhr.status < 300) resolve();
+                  else reject(new Error(`分片 ${pn} 失败: HTTP ${xhr.status}`));
+                };
+                xhr.onerror = () => reject(new Error(`分片 ${pn} 网络错误`));
+                xhr.send(slice);
+              });
+            }
+            pctEl.textContent = "合并中...";
+            await api(`${apiBase}/buckets/${encodeURIComponent(state.currentBucket)}/multipart/${uploadId}/complete`, { method: "POST" });
+            bar.style.width = "100%";
+            bar.style.background = "var(--green)";
+            pctEl.textContent = "已完成";
+          } catch (e) {
+            bar.style.background = "var(--red)";
+            pctEl.textContent = "失败";
+            toast(e.message, "err");
+          }
+        }
+      }
+      await loadAll();
+    }
+
+    // ---- Admin: Backends (Create / Edit / Test / Probe All) ----
+    function renderBackends() {
+      const kpi = document.getElementById("backends-kpi");
+      const totalQuota = state.backends.reduce((a, b) => a + Number(b.quota_bytes || 0), 0);
+      const totalUsed = state.backends.reduce((a, b) => a + Number(b.used_bytes || 0), 0);
+      const healthyCnt = state.backends.filter(b => b.last_status === "healthy").length;
+      const activeConns = state.backends.reduce((a, b) => a + Number(b.pool?.active || 0), 0);
+      kpi.innerHTML = [
+        ["blue", "纳管节点数", `${healthyCnt} / ${state.backends.length}`, "健康 / 总数"],
+        ["green", "累计存储容量", fmtBytes(totalUsed), totalQuota > 0 ? `总配额 ${fmtBytes(totalQuota)}` : "含不限配额节点"],
+        ["orange", "活跃 SFTP 通道", activeConns, "连接池复用 + 空闲自动释放"],
+      ].map(([c, l, v, s]) => `<div class="kpi-card"><div class="kpi-icon ${c}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/></svg></div><div><div class="kpi-label">${l}</div><div class="kpi-val num">${v}</div><div class="kpi-sub">${s}</div></div></div>`).join("");
+
+      const tb = document.getElementById("backends-tbody");
+      tb.innerHTML = state.backends.map((b, idx) => {
+        const quota = Number(b.quota_bytes || 0);
+        const used = Number(b.used_bytes || 0);
+        const pct = quota > 0 ? Math.min(100, Math.round(used * 100 / quota)) : 0;
+        const stCls = b.last_status === "healthy" ? "ok" : (b.last_status === "error" ? "err" : "warn");
+        return `<tr>
+          <td><strong>${esc(b.name)}</strong><div class="mono" style="font-size:11px;color:var(--text-light)">${esc(b.id.slice(0,8))}</div></td>
+          <td><span class="badge ${b.protocol === "sftp" ? "blue" : "purple"}">${esc(b.protocol.toUpperCase())}</span><div class="mono" style="margin-top:3px">${b.protocol === "sftp" ? esc(b.username + "@" + b.host + ":" + b.port) : "本地目录挂载"}</div></td>
+          <td class="mono">${esc(b.base_path)}</td>
+          <td><div class="prog-wrap">${quota > 0 ? `<div class="prog-bar ${pct > 90 ? 'err' : (pct > 75 ? 'warn' : '')}"><div style="width:${pct}%"></div></div>` : ''}<span class="num">${fmtBytes(used)} / ${quota > 0 ? fmtBytes(quota) : "不限"}</span></div></td>
+          <td class="mono num">${b.pool.active} / ${b.pool.idle} / ${b.pool.max_connections}<div style="font-size:11px;color:var(--text-light)">idle ${b.idle_timeout_sec}s</div></td>
+          <td>${getCredBadgeHtml(b)}${b.credential_expires_at ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px">${new Date(b.credential_expires_at).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})} 到期</div>` : ""}</td>
+          <td><span class="badge ${stCls}">${esc(b.last_status)}</span> ${!b.is_active ? '<span class="badge err">停用</span>' : ''} ${b.read_only ? '<span class="badge warn">只读</span>' : ''}<div style="font-size:11px;color:var(--text-muted);max-width:210px" class="truncate" title="${esc(b.last_message || "")}">${esc(b.last_message || "")}</div></td>
+          <td><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <button class="btn-link" onclick="probeBackend('${b.id}')">探活</button><span class="action-sep">|</span>
+            ${b.protocol === "sftp" ? `<button class="btn-link" onclick="openRotateCredentialDrawer(${idx})">换钥</button><span class="action-sep">|</span>` : ""}
+            <button class="btn-link" onclick="openBackendDrawer(${idx})">编辑</button><span class="action-sep">|</span>
+            <button class="btn-link" onclick="toggleBackend('${b.id}', ${!b.is_active})">${b.is_active ? "停用" : "启用"}</button><span class="action-sep">|</span>
+            <button class="btn-link danger" onclick="deleteBackend('${b.id}')">删除</button>
+          </div></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:38px;color:var(--text-muted)">暂无存储节点，点击右上角「添加存储节点」接入超算账号</td></tr>`;
+    }
+
+    function _toLocalDatetimeInputVal(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "";
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function _renderCredFieldsHtml(prefix, { auth = "key", isEdit = false, currentExpiresAt = "" } = {}) {
+      const ttlDefault = currentExpiresAt ? "custom" : (isEdit ? "keep" : "24");
+      return `
+        <div class="form-row">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label id="${prefix}-cred-label" style="margin:0">${auth === "password" ? "SSH 登录密码" : "SSH 私钥 (PEM)"}${isEdit ? "（留空保持原凭据不变）" : ""}</label>
+            <div style="display:flex;gap:10px" id="${prefix}-cred-tools" class="${auth === "password" ? "hidden" : ""}">
+              <button type="button" class="btn-link" onclick="pasteCredFromClipboard('${prefix}')">粘贴剪贴板</button>
+              <button type="button" class="btn-link" onclick="clearCredInput('${prefix}')">清空</button>
+            </div>
+          </div>
+          <div id="${prefix}-dropzone" class="key-dropzone ${auth === "password" ? "hidden" : ""}">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink:0"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              <div style="font-size:12px;color:var(--text-2)">拖拽或点击导入私钥文件（支持多选同时导入 <span class="mono">id_ed25519</span> + <span class="mono">-cert.pub</span>）</div>
+            </div>
+            <span class="badge blue" style="flex-shrink:0">选择文件</span>
+            <input id="${prefix}-keyfile" type="file" multiple class="hidden" />
+          </div>
+          <textarea id="${prefix}-cred" class="${auth === "password" ? "hidden" : ""}" placeholder="-----BEGIN OPENSSH PRIVATE KEY----- ...（如使用 OpenSSH 临时证书，可把证书公钥行一起粘贴在下方）" oninput="scheduleInspectCred('${prefix}')"></textarea>
+          <div class="input-group ${auth === "key" ? "hidden" : ""}" id="${prefix}-cred-pw-wrap">
+            <input id="${prefix}-cred-pw" type="password" placeholder="${isEdit ? "留空保持原密码" : "输入 SSH 密码"}" />
+            <button type="button" class="input-eye" onclick="toggleSecret('${prefix}-cred-pw')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div id="${prefix}-inspect-pill" class="hidden"></div>
+        </div>
+        <div class="form-row ${auth === "password" ? "hidden" : ""}" id="${prefix}-pass-row">
+          <label>私钥保护口令 Passphrase（无密码保护请留空）</label>
+          <input id="${prefix}-pass" type="password" placeholder="可选" oninput="scheduleInspectCred('${prefix}')" />
+        </div>
+        <div class="form-row">
+          <label>凭据有效期提醒设置（到期前 24 小时自动顶部告警）</label>
+          <div class="seg-group" id="${prefix}-ttl-seg" data-val="${ttlDefault}" style="flex-wrap:wrap">
+            ${isEdit ? `<button type="button" class="seg-btn ${ttlDefault === "keep" ? "active" : ""}" onclick="pickTtl('${prefix}','keep',this)">保持原期限</button>` : ""}
+            <button type="button" class="seg-btn ${ttlDefault === "0" ? "active" : ""}" onclick="pickTtl('${prefix}','0',this)">不设期限</button>
+            <button type="button" class="seg-btn ${ttlDefault === "12" ? "active" : ""}" onclick="pickTtl('${prefix}','12',this)">12 小时</button>
+            <button type="button" class="seg-btn ${ttlDefault === "24" ? "active" : ""}" onclick="pickTtl('${prefix}','24',this)">24 小时</button>
+            <button type="button" class="seg-btn ${ttlDefault === "72" ? "active" : ""}" onclick="pickTtl('${prefix}','72',this)">3 天</button>
+            <button type="button" class="seg-btn ${ttlDefault === "168" ? "active" : ""}" onclick="pickTtl('${prefix}','168',this)">7 天</button>
+            <button type="button" class="seg-btn ${ttlDefault === "720" ? "active" : ""}" onclick="pickTtl('${prefix}','720',this)">30 天</button>
+            <button type="button" class="seg-btn ${ttlDefault === "custom" ? "active" : ""}" onclick="pickTtl('${prefix}','custom',this)">自定义</button>
+          </div>
+          <div id="${prefix}-ttl-custom-wrap" class="${ttlDefault === "custom" ? "" : "hidden"}" style="margin-top:8px">
+            <input id="${prefix}-exp-custom" type="datetime-local" value="${esc(_toLocalDatetimeInputVal(currentExpiresAt))}" />
+          </div>
+        </div>`;
+    }
+
+    const _credInspectTimers = {};
+    function _setupCredInteractions(prefix) {
+      const dz = document.getElementById(`${prefix}-dropzone`);
+      const fi = document.getElementById(`${prefix}-keyfile`);
+      if (!dz || !fi) return;
+      const readFiles = async (fileList) => {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        const parts = [];
+        for (const f of files.slice(0, 3)) {
+          if (f.size > 128 * 1024) { toast(`文件 ${f.name} 超过 128 KB，请确认是否为密钥文本`, "err"); return; }
+          parts.push((await f.text()).trim());
+        }
+        document.getElementById(`${prefix}-cred`).value = parts.filter(Boolean).join("\n");
+        toast(`已导入 ${files.map(f => f.name).join(" + ")}`, "ok");
+        await inspectDraftCredential(prefix);
+      };
+      dz.onclick = () => fi.click();
+      fi.onchange = (e) => { readFiles(e.target.files); fi.value = ""; };
+      dz.ondragover = (e) => { e.preventDefault(); dz.classList.add("dragover"); };
+      dz.ondragleave = () => dz.classList.remove("dragover");
+      dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove("dragover"); readFiles(e.dataTransfer.files); };
+    }
+
+    function pickTtl(prefix, val, btnEl) {
+      pickSeg(`${prefix}-ttl-seg`, val, btnEl);
+      document.getElementById(`${prefix}-ttl-custom-wrap`).classList.toggle("hidden", val !== "custom");
+    }
+
+    async function pasteCredFromClipboard(prefix) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text.trim()) { toast("剪贴板为空", "err"); return; }
+        document.getElementById(`${prefix}-cred`).value = text.trim();
+        await inspectDraftCredential(prefix);
+      } catch { toast("浏览器未授予剪贴板读取权限，请直接 Ctrl+V 粘贴到下方文本框", "err"); }
+    }
+
+    function clearCredInput(prefix) {
+      document.getElementById(`${prefix}-cred`).value = "";
+      const pill = document.getElementById(`${prefix}-inspect-pill`);
+      pill.className = "hidden";
+      pill.innerHTML = "";
+    }
+
+    function scheduleInspectCred(prefix) {
+      clearTimeout(_credInspectTimers[prefix]);
+      _credInspectTimers[prefix] = setTimeout(() => inspectDraftCredential(prefix), 350);
+    }
+
+    async function inspectDraftCredential(prefix) {
+      const auth = document.getElementById(`${prefix}-auth-seg`).dataset.val;
+      const cred = document.getElementById(`${prefix}-cred`).value.trim();
+      const pass = document.getElementById(`${prefix}-pass`).value;
+      const pill = document.getElementById(`${prefix}-inspect-pill`);
+      if (auth !== "key" || !cred) { pill.className = "hidden"; return; }
+      try {
+        const res = await api("/api/admin/backends/inspect-credential", {
+          method: "POST",
+          body: JSON.stringify({ auth_type: auth, credential: cred, passphrase: pass }),
+        });
+        if (res.valid) {
+          let extra = "";
+          if (res.cert_valid_before) {
+            extra = ` · 证书到期 ${new Date(res.cert_valid_before).toLocaleString("zh-CN")}`;
+            const expInp = document.getElementById(`${prefix}-exp-custom`);
+            const customBtn = document.querySelector(`#${prefix}-ttl-seg .seg-btn:last-child`);
+            if (expInp && customBtn) {
+              expInp.value = _toLocalDatetimeInputVal(res.cert_valid_before);
+              pickTtl(prefix, "custom", customBtn);
+            }
+          }
+          pill.className = "key-inspect-pill ok";
+          pill.innerHTML = `<span>已解析 <strong>${esc(res.algorithm || "SSH Key")}</strong>${res.has_certificate ? " + OpenSSH 证书" : ""}${extra}</span><span class="mono truncate" style="max-width:210px">${esc(res.fingerprint || "")}</span>`;
+        } else {
+          pill.className = "key-inspect-pill err";
+          pill.innerHTML = `<span>${esc(res.error || "密钥格式未通过校验")}</span>`;
+        }
+      } catch {}
+    }
+
+    function _collectTtlPayload(prefix) {
+      const ttlChoice = document.getElementById(`${prefix}-ttl-seg`)?.dataset.val || "keep";
+      if (ttlChoice === "keep") return {};
+      if (ttlChoice === "custom") {
+        const localStr = document.getElementById(`${prefix}-exp-custom`)?.value || "";
+        if (!localStr) return { credential_expires_at: "" };
+        return { credential_expires_at: new Date(localStr).toISOString() };
+      }
+      return { credential_ttl_hours: Number(ttlChoice) };
+    }
+
+    function openRotateCredentialDrawer(idx) {
+      const b = state.backends[idx];
+      if (!b || b.protocol !== "sftp") return;
+      const auth = b.auth_type === "password" ? "password" : "key";
+      openDrawer(`一键更换 SSH 凭据 · ${b.name}`, `
+        <div class="kv-row" style="margin-bottom:14px">
+          <span class="kv-key">目标服务器</span>
+          <span class="kv-val mono">${esc(b.username)}@${esc(b.host)}:${b.port}</span>
+        </div>
+        <div class="kv-row" style="margin-bottom:14px">
+          <span class="kv-key">当前凭据状态</span>
+          <span>${getCredBadgeHtml(b)}</span>
+        </div>
+        <div class="form-row">
+          <label>认证方式</label>
+          <div class="seg-group" id="rot-auth-seg" data-val="${auth}">
+            <button type="button" class="seg-btn ${auth === "key" ? "active" : ""}" onclick="pickAuthMode('rot','key',this)">SSH 私钥 / 证书</button>
+            <button type="button" class="seg-btn ${auth === "password" ? "active" : ""}" onclick="pickAuthMode('rot','password',this)">SSH 密码</button>
+          </div>
+        </div>
+        ${_renderCredFieldsHtml("rot", { auth, isEdit: false, currentExpiresAt: "" })}
+        <div class="form-row" style="margin-top:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+            <input id="rot-test-first" type="checkbox" checked />
+            <span>先连接远端校验目录读写，通过后再替换原密钥（防填错断网）</span>
+          </label>
+        </div>
+        <div id="rot-result" class="hidden" style="margin-top:8px"></div>`,
+        `<button type="button" class="btn sec" onclick="closeDrawer()">取消</button>
+         <button type="button" class="btn orange" onclick="submitRotateCredential('${b.id}')">验证并更新凭据</button>`);
+      _setupCredInteractions("rot");
+    }
+
+    async function submitRotateCredential(backendId) {
+      const authType = document.getElementById("rot-auth-seg").dataset.val;
+      const cred = authType === "password"
+        ? document.getElementById("rot-cred-pw").value
+        : document.getElementById("rot-cred").value;
+      if (!cred.trim()) { toast("请导入或粘贴新的 SSH 私钥 / 密码", "err"); return; }
+      const box = document.getElementById("rot-result");
+      const testFirst = document.getElementById("rot-test-first").checked;
+      box.className = "kv-row";
+      box.innerHTML = `<span class="kv-key">处理状态</span><span class="kv-val">${testFirst ? "正在连接远端校验新凭据并刷新连接池..." : "正在写入加密库并刷新连接池..."}</span>`;
+      try {
+        const body = {
+          auth_type: authType,
+          credential: cred,
+          passphrase: document.getElementById("rot-pass").value,
+          test_before_save: testFirst,
+          ..._collectTtlPayload("rot"),
+        };
+        const res = await api(`/api/admin/backends/${backendId}/rotate-credential`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        toast(res.probe ? `凭据更新成功 · ${res.probe.message}` : "凭据已更新并刷新连接池", "ok");
+        closeDrawer();
+        await loadAll();
+      } catch (e) {
+        box.innerHTML = `<span class="kv-key">操作失败</span><span class="badge err">${esc(e.message)}</span>`;
+        toast(e.message, "err");
+      }
+    }
+
+    function openBackendDrawer(editIdx = null) {
+      const b = editIdx !== null ? state.backends[editIdx] : null;
+      const proto = b ? b.protocol : "sftp";
+      const auth = b ? (b.auth_type === "password" ? "password" : "key") : "key";
+      const quotaGiB = b ? Math.round((Number(b.quota_bytes || 0) / (1024 ** 3)) * 100) / 100 : 400;
+
+      openDrawer(b ? `编辑存储节点 · ${b.name}` : "添加 SFTP / 本地存储节点", `
+        <div class="form-section-title" style="margin-top:0">
+          <span>节点基础配置</span>
+          ${!b ? `<button type="button" class="btn-link" onclick="fillScnetPreset()">一键填入超算 E-Shell 模板</button>` : ""}
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>节点名称</label><input id="bk-name" value="${esc(b?.name || "")}" placeholder="例如 scnet-muse1971" /></div>
+          <div class="form-row"><label>传输协议</label>
+            <div class="seg-group" id="bk-proto-seg" data-val="${proto}">
+              <button type="button" class="seg-btn ${proto === "sftp" ? "active" : ""}" ${b ? "disabled" : ""} onclick="pickProto('sftp',this)">SFTP (超算 SSH)</button>
+              <button type="button" class="seg-btn ${proto === "local" ? "active" : ""}" ${b ? "disabled" : ""} onclick="pickProto('local',this)">Local 本地目录</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="sftp-fields" class="${proto === "local" ? "hidden" : ""}">
+          <div class="form-section-title"><span>SSH 连接与认证凭据</span></div>
+          <div class="form-grid">
+            <div class="form-row"><label>SSH 主机地址</label><input id="bk-host" value="${esc(b?.host || "")}" placeholder="login.scnet.cn" /></div>
+            <div class="form-row"><label>SSH 端口</label><input id="bk-port" type="number" value="${b?.port ?? 22}" /></div>
+            <div class="form-row"><label>SSH 用户名</label><input id="bk-user" value="${esc(b?.username || "")}" placeholder="例如 muse1" /></div>
+            <div class="form-row"><label>认证方式</label>
+              <div class="seg-group" id="bk-auth-seg" data-val="${auth}">
+                <button type="button" class="seg-btn ${auth === "key" ? "active" : ""}" onclick="pickAuthMode('bk','key',this)">SSH 私钥</button>
+                <button type="button" class="seg-btn ${auth === "password" ? "active" : ""}" onclick="pickAuthMode('bk','password',this)">SSH 密码</button>
+              </div>
+            </div>
+          </div>
+          ${_renderCredFieldsHtml("bk", { auth, isEdit: Boolean(b), currentExpiresAt: b?.credential_expires_at || "" })}
+        </div>
+
+        <div class="form-section-title"><span>目录路径与连接池限制</span></div>
+        <div class="form-row"><label>远端存储根目录（推荐共享区 /work1/share/.../banoss）</label><input id="bk-path" value="${esc(b?.base_path || "")}" placeholder="/work1/share/muse1971/banoss" /></div>
+        <div class="form-grid">
+          <div class="form-row"><label>分配容量配额 (GiB, 0=不限)</label><input id="bk-quota" type="number" value="${quotaGiB}" /></div>
+          <div class="form-row"><label>最大并发 SFTP 连接数</label><input id="bk-maxc" type="number" value="${b?.max_connections ?? 3}" /></div>
+          <div class="form-row"><label>空闲自动断连秒数</label><input id="bk-idle" type="number" value="${b?.idle_timeout_sec ?? 60}" /></div>
+          <div class="form-row" style="display:flex;align-items:flex-end;padding-bottom:6px">
+            <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer"><input id="bk-ro" type="checkbox" ${b?.read_only ? "checked" : ""} /><span>设为只读归档节点（停止新写入）</span></label>
+          </div>
+        </div>
+        <div id="bk-test-result" class="hidden" style="margin-top:8px"></div>`,
+        `<button type="button" class="btn sec" onclick="testBackendDraft('${b ? b.id : ""}')">测试连接</button>
+         <div class="actions"><button type="button" class="btn sec" onclick="closeDrawer()">取消</button><button type="button" class="btn orange" onclick="submitBackend('${b ? b.id : ""}')">${b ? "保存修改" : "保存节点"}</button></div>`);
+      _setupCredInteractions("bk");
+    }
+
+    function pickProto(proto, btnEl) {
+      pickSeg("bk-proto-seg", proto, btnEl);
+      document.getElementById("sftp-fields").classList.toggle("hidden", proto === "local");
+    }
+    function pickAuthMode(prefix, auth, btnEl) {
+      pickSeg(`${prefix}-auth-seg`, auth, btnEl);
+      const isPw = auth === "password";
+      document.getElementById(`${prefix}-cred`).classList.toggle("hidden", isPw);
+      document.getElementById(`${prefix}-cred-pw-wrap`).classList.toggle("hidden", !isPw);
+      document.getElementById(`${prefix}-pass-row`).classList.toggle("hidden", isPw);
+      document.getElementById(`${prefix}-dropzone`).classList.toggle("hidden", isPw);
+      document.getElementById(`${prefix}-cred-tools`).classList.toggle("hidden", isPw);
+      document.getElementById(`${prefix}-inspect-pill`).classList.add("hidden");
+      document.getElementById(`${prefix}-cred-label`).textContent = isPw ? "SSH 登录密码" : "SSH 私钥 (PEM)";
+    }
+    function fillScnetPreset() {
+      document.getElementById("bk-name").value = document.getElementById("bk-name").value || "scnet-node-1";
+      document.getElementById("bk-host").value = document.getElementById("bk-host").value || "login.scnet.cn";
+      document.getElementById("bk-port").value = 22;
+      document.getElementById("bk-path").value = document.getElementById("bk-path").value || "/work1/share/muse1971/banoss";
+      document.getElementById("bk-quota").value = 400;
+      document.getElementById("bk-maxc").value = 3;
+      toast("已填入超算推荐参数，请补充用户名与凭据", "info");
+    }
+
+    function _collectBackendPayload(backendId) {
+      const protocol = document.getElementById("bk-proto-seg").dataset.val;
+      const authType = document.getElementById("bk-auth-seg").dataset.val;
+      const cred = authType === "password" ? document.getElementById("bk-cred-pw").value : document.getElementById("bk-cred").value;
+      return {
+        backend_id: backendId || null,
+        name: document.getElementById("bk-name").value,
+        protocol,
+        host: document.getElementById("bk-host").value,
+        port: Number(document.getElementById("bk-port").value || 22),
+        username: document.getElementById("bk-user").value,
+        auth_type: protocol === "local" ? "none" : authType,
+        credential: cred,
+        passphrase: document.getElementById("bk-pass").value,
+        base_path: document.getElementById("bk-path").value,
+        quota_bytes: Math.round(Number(document.getElementById("bk-quota").value || 0) * (1024 ** 3)),
+        max_connections: Number(document.getElementById("bk-maxc").value || 3),
+        idle_timeout_sec: Number(document.getElementById("bk-idle").value || 60),
+        read_only: document.getElementById("bk-ro").checked,
+        ...(protocol === "sftp" ? _collectTtlPayload("bk") : {}),
+      };
+    }
+
+    async function testBackendDraft(backendId) {
+      const box = document.getElementById("bk-test-result");
+      box.className = "kv-row";
+      box.innerHTML = `<span class="kv-key">连通性测试</span><span class="kv-val">正在连接远端校验目录读写权限...</span>`;
+      try {
+        const p = _collectBackendPayload(backendId);
+        const res = await api("/api/admin/backends/test", { method: "POST", body: JSON.stringify(p) });
+        box.innerHTML = `<span class="kv-key">测试结果</span><span class="badge ${res.ok ? "ok" : "err"}">${esc(res.message)}</span>`;
+      } catch (e) {
+        box.innerHTML = `<span class="kv-key">测试结果</span><span class="badge err">${esc(e.message)}</span>`;
+      }
+    }
+
+    async function submitBackend(backendId) {
+      const p = _collectBackendPayload(backendId);
+      try {
+        if (backendId) {
+          if (!p.credential) delete p.credential;
+          if (!p.passphrase) delete p.passphrase;
+          delete p.protocol;
+          delete p.backend_id;
+          await api(`/api/admin/backends/${backendId}`, { method: "PATCH", body: JSON.stringify(p) });
+          toast("节点配置已更新", "ok");
+        } else {
+          delete p.backend_id;
+          await api("/api/admin/backends", { method: "POST", body: JSON.stringify(p) });
+          toast("存储节点已添加", "ok");
+        }
+        closeDrawer();
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    async function probeBackend(id) {
+      toast("正在发起探活...");
+      try {
+        const res = await api(`/api/admin/backends/${id}/probe`, { method: "POST" });
+        toast(res.ok ? res.message : `探活失败: ${res.message}`, res.ok ? "ok" : "err");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+    async function probeAllBackends() {
+      toast("正在并行探活全部启用节点...");
+      try {
+        const res = await api("/api/admin/backends/probe-all", { method: "POST" });
+        toast(`探活完成：${res.ok} / ${res.total} 个节点在线`, res.ok === res.total ? "ok" : "err");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+    async function toggleBackend(id, active) {
+      await api(`/api/admin/backends/${id}`, { method: "PATCH", body: JSON.stringify({ is_active: active }) });
+      toast(active ? "节点已启用" : "节点已停用", "ok");
+      await loadAll();
+    }
+    async function deleteBackend(id) {
+      if (!confirm("确定删除该存储节点？")) return;
+      try { await api(`/api/admin/backends/${id}`, { method: "DELETE" }); toast("节点已删除", "ok"); await loadAll(); } catch (e) { toast(e.message, "err"); }
+    }
+
+    // ---- Admin: Users (Create / Edit / Reveal / Rotate) & Bindings ----
+    function renderUsers() {
+      const tb = document.getElementById("users-tbody");
+      tb.innerHTML = state.users.map((u, idx) => {
+        const quota = Number(u.quota_bytes || 0);
+        const used = Number(u.used_bytes || 0);
+        const pct = quota > 0 ? Math.min(100, Math.round(used * 100 / quota)) : 0;
+        return `<tr>
+          <td><strong>${esc(u.username)}</strong></td>
+          <td class="mono"><span>${esc(u.access_key)}</span> <button class="btn-link" onclick="copyText('${escJs(u.access_key)}')">复制</button></td>
+          <td><span class="badge ${u.encryption_enabled ? "ok" : "warn"}">${u.encryption_enabled ? "AES-256-GCM" : "明文"}</span> <span class="badge ${u.is_active ? "ok" : "err"}">${u.is_active ? "正常" : "禁用"}</span></td>
+          <td><div class="prog-wrap">${quota > 0 ? `<div class="prog-bar ${pct > 90 ? 'err' : (pct > 75 ? 'warn' : '')}"><div style="width:${pct}%"></div></div>` : ''}<span class="num">${fmtBytes(used)} / ${quota > 0 ? fmtBytes(quota) : "不限"}</span></div></td>
+          <td class="num">${u.bound_backend_count} 节点 · ${u.bucket_count} Buckets</td>
+          <td><div style="display:flex;align-items:center;gap:4px">
+            <button class="btn-link" onclick="showUserConfig('${u.id}', '${escJs(u.username)}')">密钥/配置</button><span class="action-sep">|</span>
+            <button class="btn-link" onclick="openUserDrawer(${idx})">编辑</button><span class="action-sep">|</span>
+            <button class="btn-link" onclick="openBindingDrawer('${u.id}')">绑定节点</button><span class="action-sep">|</span>
+            <button class="btn-link danger" onclick="deleteUser('${u.id}', '${escJs(u.username)}')">删除</button>
+          </div></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="6" style="text-align:center;padding:34px;color:var(--text-muted)">暂无 S3 用户</td></tr>`;
+    }
+
+    function openUserDrawer(editIdx = null) {
+      const u = editIdx !== null ? state.users[editIdx] : null;
+      const quotaGiB = u ? Math.round((Number(u.quota_bytes || 0) / (1024 ** 3)) * 100) / 100 : 0;
+      openDrawer(u ? `编辑用户 · ${u.username}` : "新建 S3 访问用户", `
+        <div class="form-row"><label>用户名</label><input id="u-name" value="${esc(u?.username || "")}" ${u ? "disabled" : ""} placeholder="例如 alice-research" /></div>
+        <div class="form-row"><label>总配额限制 (GiB, 0=不限制，随绑定节点上限)</label><input id="u-quota" type="number" value="${quotaGiB}" /></div>
+        <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="u-enc" type="checkbox" ${u ? (u.encryption_enabled ? "checked" : "") : "checked"} /><span>开启 AES-256-GCM 透明分块加密（强烈推荐）</span></label></div>
+        ${u ? `<div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="u-act" type="checkbox" ${u.is_active ? "checked" : ""} /><span>启用该账号访问</span></label></div>` : ""}`,
+        `<button class="btn sec" onclick="closeDrawer()">取消</button><button class="btn orange" onclick="submitUser('${u ? u.id : ""}')">${u ? "保存修改" : "立即创建"}</button>`);
+    }
+
+    async function submitUser(userId) {
+      try {
+        const quota_bytes = Math.round(Number(document.getElementById("u-quota").value || 0) * (1024 ** 3));
+        const encryption_enabled = document.getElementById("u-enc").checked;
+        if (userId) {
+          const is_active = document.getElementById("u-act").checked;
+          await api(`/api/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify({ quota_bytes, encryption_enabled, is_active }) });
+          closeDrawer();
+          toast("用户配置已更新", "ok");
+          await loadAll();
+        } else {
+          const res = await api("/api/admin/users", { method: "POST", body: JSON.stringify({ username: document.getElementById("u-name").value, quota_bytes, encryption_enabled }) });
+          closeDrawer();
+          toast(`用户 ${res.user.username} 创建成功`, "ok");
+          await loadAll();
+          await showUserConfig(res.user.id, res.user.username);
+        }
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    async function showUserConfig(userId, username) {
+      const creds = await api(`/api/admin/users/${userId}/reveal-secret`, { method: "POST" });
+      const ep = location.origin;
+      const rcloneTxt = `[banoss]\ntype = s3\nprovider = Other\naccess_key_id = ${creds.access_key}\nsecret_access_key = ${creds.secret_key}\nendpoint = ${ep}\nforce_path_style = true\nchunk_size = 32M`;
+      openDrawer(`${username} · S3 凭证与客户端接入`, `
+        <div class="kv-list" style="margin-bottom:16px">
+          <div class="kv-row"><span class="kv-key">Access Key</span><span class="kv-val"><span>${esc(creds.access_key)}</span><button class="btn-link" onclick="copyText('${escJs(creds.access_key)}')">复制</button></span></div>
+          <div class="kv-row"><span class="kv-key">Secret Key</span><span class="kv-val"><span>${esc(creds.secret_key)}</span><button class="btn-link" onclick="copyText('${escJs(creds.secret_key)}')">复制</button></span></div>
+          <div class="kv-row"><span class="kv-key">用户控制台</span><span class="kv-val"><span>${esc(ep)}/console</span><button class="btn-link" onclick="copyText('${escJs(ep + "/console")}')">复制</button></span></div>
+        </div>
+        <label style="display:flex;justify-content:space-between"><span>rclone.conf 配置（已含 32M Cloudflare 分片）</span><button class="btn-link" onclick="copyText(document.getElementById('d-rclone').textContent)">复制配置</button></label>
+        <pre id="d-rclone">${esc(rcloneTxt)}</pre>`,
+        `<button class="btn danger" onclick="rotateKeys('${userId}', '${escJs(username)}')">轮换 AK/SK</button><button class="btn" onclick="closeDrawer()">完成</button>`,
+        { closeOnBackdrop: true });
+    }
+
+    async function rotateKeys(userId, username) {
+      if (!confirm("轮换后旧密钥立即失效，确认？")) return;
+      await api(`/api/admin/users/${userId}/rotate-keys`, { method: "POST" });
+      toast("密钥已轮换", "ok");
+      await loadAll();
+      await showUserConfig(userId, username);
+    }
+    async function deleteUser(id, name) {
+      if (!confirm(`确定删除用户 ${name} 及其全部数据？`)) return;
+      await api(`/api/admin/users/${id}`, { method: "DELETE" });
+      toast(`已删除用户 ${name}`, "ok");
+      await loadAll();
+    }
+
+    function renderBindings() {
+      const tb = document.getElementById("bindings-tbody");
+      tb.innerHTML = state.bindings.map((bd, idx) => {
+        const q = Number(bd.quota_bytes || 0);
+        return `<tr>
+          <td><strong>${esc(bd.user_username)}</strong></td>
+          <td><strong>${esc(bd.backend_name)}</strong> <span class="badge blue">${esc(bd.backend_protocol.toUpperCase())}</span></td>
+          <td><span class="badge num">优先级 ${bd.priority}</span></td>
+          <td class="num">${fmtBytes(bd.user_backend_used_bytes)} / ${q > 0 ? fmtBytes(q) : "跟随节点"}</td>
+          <td><div style="display:flex;align-items:center;gap:4px">
+            <button class="btn-link" onclick="openBindingDrawer('${bd.user_id}', '${bd.backend_id}', ${bd.priority}, ${q})">调整</button>
+            <span class="action-sep">|</span>
+            <button class="btn-link danger" onclick="deleteBinding('${bd.user_id}', '${bd.backend_id}')">解绑</button>
+          </div></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">暂无绑定关系</td></tr>`;
+    }
+
+    function openBindingDrawer(preUid = "", preBid = "", prePrio = 100, preQuotaBytes = 0) {
+      const uOpts = state.users.map(u => ({ value: u.id, label: u.username, sub: `${u.bound_backend_count} 节点已绑定` }));
+      const bOpts = state.backends.map(b => ({
+        value: b.id, label: b.name, badge: b.protocol.toUpperCase(),
+        sub: `${b.base_path} · 已用 ${fmtBytes(b.used_bytes)}`,
+      }));
+      const quotaGiB = Math.round((Number(preQuotaBytes || 0) / (1024 ** 3)) * 100) / 100;
+      openDrawer(preBid ? "调整存储路由绑定" : "绑定 S3 用户与存储节点", `
+        <div class="form-row"><label>选择 S3 用户</label>${renderSelect("b-uid", uOpts, preUid || uOpts[0]?.value || "", { placeholder: "请先创建用户" })}</div>
+        <div class="form-row"><label>选择存储节点（可绑定多个以聚合容量）</label>${renderSelect("b-bid", bOpts, preBid || bOpts[0]?.value || "", { placeholder: "请先添加节点" })}</div>
+        <div class="form-grid">
+          <div class="form-row"><label>写入优先级 (越小越先写入)</label><input id="b-prio" type="number" value="${prePrio}" /></div>
+          <div class="form-row"><label>分配配额 (GiB, 0=跟随节点上限)</label><input id="b-quota" type="number" value="${quotaGiB}" /></div>
+        </div>`,
+        `<button class="btn sec" onclick="closeDrawer()">取消</button><button class="btn orange" onclick="submitBinding()">保存绑定</button>`);
+    }
+
+    async function submitBinding() {
+      const user_id = getSelectValue("b-uid");
+      const backend_id = getSelectValue("b-bid");
+      if (!user_id || !backend_id) { toast("请选择用户和存储节点", "err"); return; }
+      try {
+        await api("/api/admin/bindings", {
+          method: "POST",
+          body: JSON.stringify({
+            user_id, backend_id,
+            priority: Number(document.getElementById("b-prio").value || 100),
+            quota_bytes: Math.round(Number(document.getElementById("b-quota").value || 0) * (1024 ** 3)),
+          }),
+        });
+        closeDrawer();
+        toast("节点路由绑定已保存", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+    async function deleteBinding(uid, bid) {
+      await api(`/api/admin/bindings/${uid}/${bid}`, { method: "DELETE" });
+      toast("已解除绑定", "ok");
+      await loadAll();
+    }
+
+    function renderBucketRequests() {
+      const tb = document.getElementById("requests-tbody");
+      if (!tb) return;
+      tb.innerHTML = (state.bucketRequests || []).map((r, idx) => {
+        const stMap = { pending: ["warn", "待审批"], approved: ["ok", "已通过"], rejected: ["err", "已驳回"] };
+        const [stCls, stTxt] = stMap[r.status] || ["", r.status];
+        const reqGiB = r.requested_quota_bytes > 0 ? fmtBytes(r.requested_quota_bytes) : "默认";
+        return `<tr>
+          <td><strong>${esc(r.username)}</strong><div style="font-size:11px;color:var(--text-light)">${r.user_bound_count > 0 ? `已绑 ${r.user_bound_count} 节点` : "尚未绑定节点"}</div></td>
+          <td class="mono"><strong>${esc(r.bucket_name)}</strong></td>
+          <td><span class="badge ${r.acl === "public-read" ? "warn" : "ok"}">${r.acl === "public-read" ? "公共读" : "私有"}</span></td>
+          <td class="num">${reqGiB}</td>
+          <td style="max-width:200px">${esc(r.reason || "-")}</td>
+          <td><span class="badge ${stCls}">${stTxt}</span>${r.admin_note ? `<div style="font-size:11px;color:var(--text-muted)">${esc(r.admin_note)}</div>` : ""}</td>
+          <td>${fmtTime(r.created_at)}</td>
+          <td>${r.status === "pending" ? `<div style="display:flex;align-items:center;gap:4px">
+            <button class="btn-link" onclick="openApproveRequestDrawer(${idx})">批准分配</button><span class="action-sep">|</span>
+            <button class="btn-link danger" onclick="rejectBucketRequest('${r.id}', '${escJs(r.bucket_name)}')">驳回</button>
+          </div>` : `<span style="font-size:12px;color:var(--text-light)">已处理</span>`}</td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:34px;color:var(--text-muted)">暂无用户 Bucket 申请记录</td></tr>`;
+    }
+
+    function openApproveRequestDrawer(idx) {
+      const r = state.bucketRequests[idx];
+      if (!r) return;
+      const reqGiB = Math.round((Number(r.requested_quota_bytes || 0) / (1024 ** 3)) * 100) / 100;
+      const curQuotaGiB = Math.round((Number(r.user_quota_bytes || 0) / (1024 ** 3)) * 100) / 100;
+      const suggestGiB = curQuotaGiB > 0 ? curQuotaGiB : (reqGiB > 0 ? reqGiB : 20);
+      const nodeChecks = state.backends.map((b, i) => `
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;background:#fafbfc">
+          <span style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" class="apr-bk-chk" value="${esc(b.id)}" ${r.user_bound_count === 0 && i === 0 ? "checked" : ""} />
+            <strong>${esc(b.name)}</strong>
+            <span class="badge ${b.protocol === "sftp" ? "blue" : "purple"}">${esc(b.protocol.toUpperCase())}</span>
+          </span>
+          <span class="mono" style="font-size:11.5px;color:var(--text-muted)">${esc(b.base_path)}</span>
+        </label>`).join("") || `<div style="color:var(--red);font-size:12px">暂无可用存储节点，请先在「SFTP 存储节点池」添加节点。</div>`;
+
+      openDrawer(`审批开通 Bucket · ${r.bucket_name}`, `
+        <div class="kv-list" style="margin-bottom:14px">
+          <div class="kv-row"><span class="kv-key">申请人</span><span class="kv-val">${esc(r.username)} (当前绑定 ${r.user_bound_count} 节点)</span></div>
+          <div class="kv-row"><span class="kv-key">申请 Bucket</span><span class="kv-val">${esc(r.bucket_name)} (${esc(r.acl)})</span></div>
+          <div class="kv-row"><span class="kv-key">申请容量 / 说明</span><span class="kv-val">${reqGiB > 0 ? reqGiB + " GiB" : "未指定"} · ${esc(r.reason || "-")}</span></div>
+        </div>
+        <div class="form-row">
+          <label>${r.user_bound_count > 0 ? "可选：额外追加绑定的存储节点" : "为该用户分配底层存储节点（可多选，用户侧不可见）"}</label>
+          <div>${nodeChecks}</div>
+        </div>
+        <div class="form-row"><label>设置用户总配额上限 (GiB, 0=不设限)</label><input id="apr-quota" type="number" value="${suggestGiB}" /></div>
+        <div class="form-row"><label>审批备注（可选，对用户可见，切勿填写节点或路径信息）</label><input id="apr-note" placeholder="例如：已为您开通存储空间" /></div>`,
+        `<button type="button" class="btn sec" onclick="closeDrawer()">取消</button>
+         <button type="button" class="btn orange" onclick="submitApproveRequest('${r.id}')">批准开通并创建 Bucket</button>`);
+    }
+
+    async function submitApproveRequest(reqId) {
+      const backend_ids = Array.from(document.querySelectorAll(".apr-bk-chk:checked")).map(el => el.value);
+      const qGiB = Number(document.getElementById("apr-quota").value || 0);
+      const admin_note = document.getElementById("apr-note").value.trim();
+      try {
+        await api(`/api/admin/bucket-requests/${reqId}/approve`, {
+          method: "POST",
+          body: JSON.stringify({
+            backend_ids,
+            user_quota_bytes: Math.round(qGiB * (1024 ** 3)),
+            admin_note,
+          }),
+        });
+        closeDrawer();
+        toast("已批准开通并自动创建 Bucket", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    async function rejectBucketRequest(reqId, bname) {
+      const note = prompt(`确定驳回「${bname}」的开通申请？可输入驳回原因（可选）：`, "");
+      if (note === null) return;
+      try {
+        await api(`/api/admin/bucket-requests/${reqId}/reject`, {
+          method: "POST",
+          body: JSON.stringify({ admin_note: note }),
+        });
+        toast("已驳回该申请", "ok");
+        await loadAll();
+      } catch (e) { toast(e.message, "err"); }
+    }
+
+    (async () => {
+      setupModeUI();
+      try {
+        await loadAll();
+        showApp();
+      } catch {
+        showLogin();
+      }
+      if (isAdminMode) {
+        setInterval(() => {
+          if (document.getElementById("app-shell").classList.contains("hidden")) return;
+          for (const b of state.backends || []) {
+            if (!b.credential_expires_at || b.protocol !== "sftp") continue;
+            const rem = Math.floor((new Date(b.credential_expires_at).getTime() - Date.now()) / 1000);
+            b.credential_remaining_seconds = rem;
+            b.credential_status = rem <= 0 ? "expired" : (rem <= 86400 ? "expiring_soon" : "valid");
+          }
+          renderCredentialAlertBanner();
+          if (!document.getElementById("tab-backends").classList.contains("hidden")) renderBackends();
+        }, 60000);
+      }
+    })();
+  </script>
+</body>
+</html>
